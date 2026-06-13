@@ -6,6 +6,7 @@ import com.casagh.casagh_backend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -15,14 +16,19 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // REGISTER endpoint
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.register(request));
     }
 
-    // Health check - test if API is working
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.login(
+                request.get("email"),
+                request.get("password")
+        ));
+    }
+
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("CasaGH API is running!");
