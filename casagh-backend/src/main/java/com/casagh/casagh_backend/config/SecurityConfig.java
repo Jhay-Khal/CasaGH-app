@@ -20,11 +20,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no login needed
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/properties/**").permitAll()
                         .requestMatchers("/api/properties").permitAll()
-                        // Everything else requires login
+                        .requestMatchers("/api/saved/**").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

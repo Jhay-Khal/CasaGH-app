@@ -12,4 +12,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
     List<Property> findByIsVerifiedTrue();
     List<Property> findByIsActiveTrue();
     List<Property> findByCityAndType(String city, String type);
+    List<Property> findByRegion(String region);
+    List<Property> findByIsForRentTrue();
 }
