@@ -25,6 +25,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/properties").permitAll()
                         .requestMatchers("/api/saved/**").permitAll()
                         .requestMatchers("/api/reviews/**").permitAll()
+                        .requestMatchers("/api/messages/**").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();
