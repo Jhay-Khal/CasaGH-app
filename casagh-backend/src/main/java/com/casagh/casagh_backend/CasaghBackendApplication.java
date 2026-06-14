@@ -9,5 +9,4 @@ public class CasaghBackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CasaghBackendApplication.class, args);
 	}
-
 }

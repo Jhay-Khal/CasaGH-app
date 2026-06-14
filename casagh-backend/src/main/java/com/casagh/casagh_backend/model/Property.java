@@ -32,8 +32,8 @@ public class Property {
     @Column(name = "is_for_rent")
     private Boolean isForRent = true;
 
-    @Column(name = "is_verified")
-    private Boolean isVerified = false;
+    @Column(name = "verification_status")
+    private String verificationStatus = "PENDING";
 
     @Column(name = "is_active")
     private Boolean isActive = true;
