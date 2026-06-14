@@ -3,6 +3,7 @@ package com.casagh.casagh_backend.service;
 import com.casagh.casagh_backend.config.JwtUtil;
 import com.casagh.casagh_backend.dto.AuthResponse;
 import com.casagh.casagh_backend.dto.RegisterRequest;
+import com.casagh.casagh_backend.dto.LoginRequest;
 import com.casagh.casagh_backend.model.User;
 import com.casagh.casagh_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +33,10 @@ public class AuthService {
         return new AuthResponse("Registration successful!", user.getEmail(), user.getRole(), token);
     }
 
-    public AuthResponse login(String email, String password) {
-        User user = userRepository.findByEmail(email)
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found!"));
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid password!");
         }
         String token = jwtUtil.generateToken(user.getEmail());

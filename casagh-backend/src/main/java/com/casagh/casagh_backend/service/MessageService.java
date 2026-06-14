@@ -8,6 +8,7 @@ import com.casagh.casagh_backend.repository.PropertyRepository;
 import com.casagh.casagh_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -17,6 +18,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
+    private final NotificationService notificationService;
 
     public Message sendMessage(Long senderId, Long receiverId, Long propertyId, String content) {
         User sender = userRepository.findById(senderId)
@@ -31,7 +33,18 @@ public class MessageService {
         message.setReceiver(receiver);
         message.setProperty(property);
         message.setContent(content);
-        return messageRepository.save(message);
+        Message saved = messageRepository.save(message);
+
+        // Notify the receiver
+        notificationService.createNotification(
+                receiver,
+                "NEW_MESSAGE",
+                sender.getFullName() + " sent you a message about \"" + property.getTitle() + "\"",
+                property.getId(),
+                saved.getId()
+        );
+
+        return saved;
     }
 
     public List<Message> getSentMessages(Long senderId) {
