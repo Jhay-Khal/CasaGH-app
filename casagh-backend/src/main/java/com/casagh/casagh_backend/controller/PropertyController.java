@@ -3,8 +3,10 @@ package com.casagh.casagh_backend.controller;
 import com.casagh.casagh_backend.model.Property;
 import com.casagh.casagh_backend.service.PropertyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Map;
@@ -19,8 +21,11 @@ public class PropertyController {
     private final PropertyService propertyService;
 
     @GetMapping
-    public ResponseEntity<List<Property>> getAllProperties() {
-        return ResponseEntity.ok(propertyService.getAllActiveProperties());
+    public ResponseEntity<Page<Property>> getAllProperties(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+        return ResponseEntity.ok(propertyService.getAllActivePropertiesPaged(page, size, sortBy));
     }
 
     @GetMapping("/{id}")
@@ -29,13 +34,19 @@ public class PropertyController {
     }
 
     @GetMapping("/city/{city}")
-    public ResponseEntity<List<Property>> getByCity(@PathVariable String city) {
-        return ResponseEntity.ok(propertyService.getPropertiesByCity(city));
+    public ResponseEntity<Page<Property>> getByCity(
+            @PathVariable String city,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(propertyService.getPropertiesByCityPaged(city, page, size));
     }
 
     @GetMapping("/type/{type}")
-    public ResponseEntity<List<Property>> getByType(@PathVariable String type) {
-        return ResponseEntity.ok(propertyService.getPropertiesByType(type));
+    public ResponseEntity<Page<Property>> getByType(
+            @PathVariable String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(propertyService.getPropertiesByTypePaged(type, page, size));
     }
 
     @GetMapping("/verified")
@@ -65,7 +76,6 @@ public class PropertyController {
         return ResponseEntity.ok(Map.of("status", "Property deleted"));
     }
 
-
     // ─── Admin Verification ───────────────────────────────────
 
     @PutMapping("/{id}/approve")
@@ -88,5 +98,12 @@ public class PropertyController {
             @RequestParam(required = false) String type) {
         return ResponseEntity.ok(propertyService.searchProperties(
                 minPrice, maxPrice, isForRent, region, city, type));
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<Page<Property>> getPropertiesPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(propertyService.getPropertiesPaginated(page, size));
     }
 }

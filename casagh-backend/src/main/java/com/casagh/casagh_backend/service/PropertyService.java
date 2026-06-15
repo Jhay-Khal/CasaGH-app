@@ -7,18 +7,37 @@ import com.casagh.casagh_backend.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PropertyService {
 
     private final PropertyRepository propertyRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
 
     public List<Property> getAllActiveProperties() {
         return propertyRepository.findByIsActiveTrue();
+    }
+
+    public Page<Property> getAllActivePropertiesPaged(int page, int size, String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return propertyRepository.findByIsActiveTrue(pageable);
+    }
+
+    public Page<Property> getPropertiesByCityPaged(String city, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return propertyRepository.findByCity(city, pageable);
+    }
+
+    public Page<Property> getPropertiesByTypePaged(String type, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return propertyRepository.findByType(type, pageable);
     }
 
     public Property getPropertyById(Long id) {
@@ -71,7 +90,6 @@ public class PropertyService {
         property.setVerificationStatus("APPROVED");
         Property saved = propertyRepository.save(property);
 
-        // Notify the owner
         User owner = property.getOwner();
         notificationService.createNotification(
                 owner,
@@ -83,6 +101,7 @@ public class PropertyService {
 
         return saved;
     }
+
     public Property rejectProperty(Long propertyId) {
         Property property = getPropertyById(propertyId);
         property.setVerificationStatus("REJECTED");
@@ -99,9 +118,15 @@ public class PropertyService {
 
         return saved;
     }
-        public List<Property> searchProperties(BigDecimal minPrice, BigDecimal maxPrice,
-                Boolean isForRent, String region,
-                String city, String type) {
-            return propertyRepository.searchProperties(minPrice, maxPrice, isForRent, region, city, type);
-        }
+
+    public List<Property> searchProperties(BigDecimal minPrice, BigDecimal maxPrice,
+                                           Boolean isForRent, String region,
+                                           String city, String type) {
+        return propertyRepository.searchProperties(minPrice, maxPrice, isForRent, region, city, type);
     }
+
+    public Page<Property> getPropertiesPaginated(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return propertyRepository.findAll(pageable);
+    }
+}
