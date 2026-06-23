@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
-
+import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Houses from "./pages/Houses";
 import Hostels from "./pages/Hostels";
@@ -30,8 +30,7 @@ function App() {
     >
       <BrowserRouter>
         <Navbar
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
+        
         />
 
         <Routes>
@@ -59,6 +58,10 @@ function App() {
             path="/forgot-password"
             element={<ForgotPassword />}
           />
+          <Route
+  path="/settings"
+  element={<Settings />}
+/>
 
           <Route
             path="/profile"

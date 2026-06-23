@@ -103,7 +103,7 @@ function Register() {
           style={{
             width: "100%",
             padding: "12px",
-            backgroundColor: "#0F4C81",
+            backgroundColor: "#15803D",
             color: "white",
             border: "none",
             borderRadius: "8px",

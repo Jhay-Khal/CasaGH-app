@@ -67,7 +67,7 @@ function InquiryForm() {
         <button
           type="submit"
           style={{
-            backgroundColor: "#0F4C81",
+            backgroundColor: "#16A34A",
             color: "white",
             border: "none",
             padding: "12px 20px",

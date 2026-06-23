@@ -1,20 +1,10 @@
 import { Link } from "react-router-dom";
 
-interface NavbarProps {
-  darkMode: boolean;
-  setDarkMode: React.Dispatch<
-    React.SetStateAction<boolean>
-  >;
-}
-
-function Navbar({
-  darkMode,
-  setDarkMode,
-}: NavbarProps) {
+function Navbar() {
   return (
     <nav
       style={{
-        backgroundColor: "#0F4C81",
+        backgroundColor: "#16A34A",
         padding: "15px 40px",
         display: "flex",
         justifyContent: "space-between",
@@ -104,30 +94,10 @@ function Navbar({
         </li>
 
         <li>
-          <button
-            onClick={() =>
-              setDarkMode(!darkMode)
-            }
-            style={{
-              backgroundColor: "#374151",
-              color: "white",
-              border: "none",
-              padding: "10px 15px",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            {darkMode
-              ? "☀️ Light"
-              : "🌙 Dark"}
-          </button>
-        </li>
-
-        <li>
           <Link to="/add-property">
             <button
               style={{
-                backgroundColor: "#F59E0B",
+                backgroundColor: "#15803D",
                 color: "white",
                 border: "none",
                 padding: "10px 15px",

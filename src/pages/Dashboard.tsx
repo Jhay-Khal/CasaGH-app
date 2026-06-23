@@ -88,7 +88,7 @@ function Dashboard() {
           style={{
             marginTop: "10px",
             padding: "10px 20px",
-            backgroundColor: "#0F4C81",
+           backgroundColor: "#15803D",
             color: "white",
             border: "none",
             borderRadius: "8px",
@@ -133,10 +133,32 @@ function Dashboard() {
   </div>
 </Link>
 
-        <div style={sectionStyle}>
-          <h3>⚙️ Settings</h3>
-          <p>Manage your account settings.</p>
-        </div>
+      <Link
+  to="/settings"
+  style={{
+    textDecoration: "none",
+    color: "inherit",
+  }}
+>
+  <div style={sectionStyle}>
+    <h3>⚙️ Settings</h3>
+    <p>Manage your account settings.</p>
+
+    <button
+      style={{
+        backgroundColor: "#16A34A",
+        color: "white",
+        border: "none",
+        padding: "10px 15px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        marginTop: "10px",
+      }}
+    >
+      Open Settings
+    </button>
+  </div>
+</Link>
       </div>
     </div>
   );

@@ -36,13 +36,14 @@ function Home() {
           }}
         >
           <h1
-            style={{
-              fontSize: "3rem",
-              marginBottom: "10px",
-            }}
-          >
-            Welcome to CasaGH
-          </h1>
+  style={{
+    fontSize: "3rem",
+    marginBottom: "10px",
+    color: "#DCFCE7",
+  }}
+>
+   Welcome to CasaGH
+</h1>
 
           <p
             style={{
@@ -53,23 +54,24 @@ function Home() {
             Find Houses for Sale and Hostels for Rent Across Ghana
           </p>
 
-          <input
-            type="text"
-            placeholder="Search by location..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: "12px",
-              width: "300px",
-              borderRadius: "8px",
-              border: "none",
-            }}
-          />
+         <input
+  type="text"
+  placeholder="Search by location..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  style={{
+    padding: "12px",
+    width: "300px",
+    borderRadius: "8px",
+    border: "2px solid #16A34A",
+    outline: "none",
+  }}
+/>
 
           <div style={{ marginTop: "20px" }}>
             <button
               style={{
-                backgroundColor: "#F59E0B",
+               backgroundColor: "#15803D",
                 color: "white",
                 border: "none",
                 padding: "12px 20px",
@@ -83,7 +85,7 @@ function Home() {
 
             <button
               style={{
-                backgroundColor: "#0F4C81",
+                backgroundColor: "#16A34A",
                 color: "white",
                 border: "none",
                 padding: "12px 20px",
@@ -98,7 +100,14 @@ function Home() {
       </section>
 
       <section style={{ padding: "40px 20px" }}>
-        <h2>Featured Properties</h2>
+        <h2
+  style={{
+    color: "#16A34A",
+    marginBottom: "20px",
+  }}
+>
+  Featured Properties
+</h2>
 
         <div
           style={{

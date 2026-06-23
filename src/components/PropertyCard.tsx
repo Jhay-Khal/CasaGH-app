@@ -25,15 +25,15 @@ function PropertyCard({
       }}
     >
       <div style={{ position: "relative" }}>
-        <img
-          src={property.image}
-          alt={property.title}
-          style={{
-            width: "100%",
-            height: "200px",
-            objectFit: "cover",
-          }}
-        />
+       <img
+  src={property.image}
+  alt={property.title}
+  style={{
+    width: "100%",
+    height: "200px",
+    objectFit: "cover",
+  }}
+/>
 
         <button
           onClick={() => setSaved(!saved)}
@@ -75,7 +75,7 @@ function PropertyCard({
 
         <h3
           style={{
-            color: "#0F4C81",
+           color: "#16A34A",
           }}
         >
           GHS {property.price.toLocaleString()}
@@ -98,7 +98,7 @@ function PropertyCard({
             <button
               style={{
                 width: "100%",
-                backgroundColor: "#F59E0B",
+                backgroundColor: "#16A34A",
                 color: "white",
                 border: "none",
                 padding: "12px",

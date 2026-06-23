@@ -4,29 +4,29 @@ export const properties = [
     title: "Luxury Villa",
     location: "Accra",
     price: 950000,
-    image: "https://picsum.photos/800/400?random=10",
+    image:
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80",
     description:
       "Beautiful luxury villa with modern facilities and spacious rooms.",
-    
   },
   {
     id: 2,
-    title: "Student Hostel",
+    title: "Modern Apartment",
     location: "Kumasi",
-    price: 2000,
-    image: "https://picsum.photos/800/400?random=11",
+    price: 550000,
+    image:
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
     description:
-      "Affordable hostel close to campus with WiFi and security.",
-    
+      "Modern apartment located in a peaceful neighborhood.",
   },
   {
     id: 3,
     title: "Modern Family House",
     location: "Takoradi",
     price: 650000,
-    image: "https://picsum.photos/800/400?random=12",
+    image:
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
     description:
       "Modern family house with parking and a large compound.",
-   
   },
 ];
