@@ -7,8 +7,33 @@ import { Text } from '../../components/Text';
 import { Chip } from '../../components/Chip';
 import { ListingCard } from '../../components/ListingCard';
 import { Input } from '../../components/Input';
+import { api } from '../api/client';
+import { ActivityIndicator, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 export default function Explore() {
+  const [properties, setProperties] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProperties();
+    }, [])
+  );
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      const data: any = await api.get('/properties');
+      // Spring Data Page returns elements in 'content' array
+      setProperties(data.content || []);
+    } catch (error: any) {
+      console.error('Failed to fetch properties:', error);
+      Alert.alert('Error', error.message || 'Failed to fetch properties. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -41,28 +66,32 @@ export default function Explore() {
 
         <View style={{ height: theme.spacing.sp4 }} />
 
-        <ListingCard
-          imageUrl="https://images.unsplash.com/photo-1555854877-bab0e564b8d5"
-          name="Green Valley Hostel"
-          location="Ayigya, Kumasi · 0.8km from KNUST"
-          pricePerNight={85}
-          rating={4.8}
-          reviewCount={120}
-          verified
-          onPress={() => router.push('/hostel/1')}
-          onToggleSave={() => {}}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 40 }} />
+        ) : (
+          properties.map((property) => (
+            <ListingCard
+              key={property.id}
+              imageUrl={property.coverImage || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5"}
+              name={property.name || property.title}
+              location={`${property.city}, ${property.region}`}
+              pricePerNight={property.price || property.monthlyRent || 0}
+              rating={4.8} // Placeholder for rating
+              reviewCount={120} // Placeholder for reviews
+              verified={property.status === 'VERIFIED'}
+              onPress={() => router.push(`/hostel/${property.id}`)}
+              onToggleSave={() => {}}
+            />
+          ))
+        )}
 
-        <ListingCard
-          imageUrl="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267"
-          name="Evandy Hostel"
-          location="Bomso, Kumasi · 1.2km from KNUST"
-          pricePerNight={120}
-          rating={4.2}
-          reviewCount={85}
-          onPress={() => router.push('/hostel/2')}
-          onToggleSave={() => {}}
-        />
+        {/* Fallback to mock data if empty (for UI testing without DB) */}
+        {!loading && properties.length === 0 && (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+             <Text variant="bodyMd" color={theme.colors.inkSoft}>No properties found on the server.</Text>
+          </View>
+        )}
+
       </ScrollView>
 
       {/* Floating Map Button */}

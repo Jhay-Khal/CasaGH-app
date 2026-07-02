@@ -6,14 +6,35 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
+import { api } from '../api/client';
+import { ActivityIndicator } from 'react-native';
 
 export default function HostelDetails() {
   const { id } = useLocalSearchParams();
+  const [property, setProperty] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const isGreenValley = id === '1';
-  const name = isGreenValley ? "Green Valley Hostel" : "Evandy Hostel";
-  const imageUrl = isGreenValley ? "https://images.unsplash.com/photo-1555854877-bab0e564b8d5" : "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267";
-  const price = isGreenValley ? 85 : 120;
+  React.useEffect(() => {
+    fetchProperty();
+  }, [id]);
+
+  const fetchProperty = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get(`/properties/${id}`);
+      setProperty(data);
+    } catch (error: any) {
+      console.error('Failed to fetch property details:', error);
+      Alert.alert('Error', error.message || 'Failed to fetch property details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const name = property?.name || property?.title || "Hostel";
+  const imageUrl = property?.coverImage || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5";
+  const price = property?.price || property?.monthlyRent || 0;
+  const isVerified = property?.status === 'VERIFIED';
 
   const handleWhatsApp = async () => {
     const url = 'whatsapp://send?phone=+233551234567&text=Hello,%20I%20am%20interested%20in%20your%20hostel.';
@@ -40,6 +61,10 @@ export default function HostelDetails() {
 
   return (
     <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 60 }} />
+      ) : (
+      <>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.imageWrap}>
           <Image source={{ uri: imageUrl }} style={styles.image} />
@@ -54,13 +79,13 @@ export default function HostelDetails() {
         <View style={styles.details}>
           <View style={styles.titleRow}>
             <Text variant="h1">{name}</Text>
-            {isGreenValley && <Badge label="Verified host" kind="success" />}
+            {isVerified && <Badge label="Verified host" kind="success" />}
           </View>
           
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={theme.colors.inkSoft} style={{ marginRight: 6 }} />
             <Text variant="bodyMd" color={theme.colors.inkSoft}>
-              Kumasi, Ashanti Region
+              {property?.city || 'Kumasi'}, {property?.region || 'Ashanti Region'}
             </Text>
           </View>
 
@@ -68,7 +93,7 @@ export default function HostelDetails() {
 
           <Text variant="h2" style={{ marginBottom: 12 }}>About this stay</Text>
           <Text variant="bodyLg" color={theme.colors.ink} style={{ lineHeight: 26 }}>
-            This is a beautiful and serene environment located very close to KNUST campus. It features 24/7 security, continuous water supply, and high-speed Wi-Fi.
+            {property?.description || "This is a beautiful and serene environment located very close to KNUST campus. It features 24/7 security, continuous water supply, and high-speed Wi-Fi."}
           </Text>
 
           <View style={styles.divider} />
@@ -120,8 +145,10 @@ export default function HostelDetails() {
             Starting from ₵{price}
           </Text>
         </View>
-        <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} />
+        <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} disabled={loading} />
       </View>
+      </>
+      )}
     </View>
   );
 }

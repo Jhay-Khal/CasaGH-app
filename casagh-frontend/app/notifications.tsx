@@ -4,15 +4,35 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { Text } from '../components/Text';
-
-const NOTIFICATIONS = [
-  { id: '1', title: 'Booking Confirmed!', message: 'Your room at Green Valley Hostel is confirmed for the academic year.', time: '2m ago', type: 'success', unread: true },
-  { id: '2', title: 'Payment Reminder', message: 'You have a pending payment of ₵4,200 due in 3 days.', time: '1h ago', type: 'warning', unread: true },
-  { id: '3', title: 'New Message from Host', message: 'Evandy Hostel: "Hello, yes we have study rooms available."', time: 'Yesterday', type: 'message', unread: false },
-  { id: '4', title: 'Flash Promo!', message: 'Get 10% off early bookings at selected hostels. Tap to view.', time: '2 days ago', type: 'promo', unread: false },
-];
+import { useAuth } from './context/AuthContext';
+import { api } from './api/client';
+import { ActivityIndicator } from 'react-native';
 
 export default function Notifications() {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data: any = await api.get(`/notifications/${user.id}`);
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -24,33 +44,47 @@ export default function Notifications() {
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
-        {NOTIFICATIONS.map(notif => {
-          const isSuccess = notif.type === 'success';
-          const isWarning = notif.type === 'warning';
-          const isMessage = notif.type === 'message';
-          
-          let iconName = 'notifications';
-          let iconColor: string = theme.colors.green700;
-          let bgColor: string = theme.colors.green100;
+        {!user ? (
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ textAlign: 'center', marginTop: 20 }}>
+            Please sign in to view notifications.
+          </Text>
+        ) : loading ? (
+          <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 40 }} />
+        ) : notifications.length === 0 ? (
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ textAlign: 'center', marginTop: 20 }}>
+            No notifications yet.
+          </Text>
+        ) : (
+          notifications.map(notif => {
+            const isSuccess = notif.type === 'SUCCESS';
+            const isWarning = notif.type === 'WARNING';
+            const isMessage = notif.type === 'MESSAGE';
+            
+            let iconName = 'notifications';
+            let iconColor: string = theme.colors.green700;
+            let bgColor: string = theme.colors.green100;
 
-          if (isSuccess) { iconName = 'checkmark-circle'; iconColor = theme.colors.green700; }
-          if (isWarning) { iconName = 'alert-circle'; iconColor = theme.colors.warning; bgColor = '#fffbeb'; }
-          if (isMessage) { iconName = 'chatbubble-ellipses'; iconColor = theme.colors.ink; bgColor = theme.colors.line; }
+            if (isSuccess) { iconName = 'checkmark-circle'; iconColor = theme.colors.green700; }
+            if (isWarning) { iconName = 'alert-circle'; iconColor = theme.colors.warning; bgColor = '#fffbeb'; }
+            if (isMessage) { iconName = 'chatbubble-ellipses'; iconColor = theme.colors.ink; bgColor = theme.colors.line; }
 
-          return (
-            <Pressable key={notif.id} style={[styles.card, notif.unread && styles.unreadCard]}>
-              <View style={[styles.iconWrap, { backgroundColor: bgColor }]}>
-                <Ionicons name={iconName as any} size={24} color={iconColor} />
-              </View>
-              <View style={styles.textWrap}>
-                <Text variant="h3">{notif.title}</Text>
-                <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginTop: 4 }}>{notif.message}</Text>
-                <Text variant="caption" color={theme.colors.inkSoft} style={{ marginTop: 8 }}>{notif.time}</Text>
-              </View>
-              {notif.unread && <View style={styles.unreadDot} />}
-            </Pressable>
-          );
-        })}
+            return (
+              <Pressable key={notif.id} style={[styles.card, !notif.isRead && styles.unreadCard]}>
+                <View style={[styles.iconWrap, { backgroundColor: bgColor }]}>
+                  <Ionicons name={iconName as any} size={24} color={iconColor} />
+                </View>
+                <View style={styles.textWrap}>
+                  <Text variant="h3">{notif.title || notif.type}</Text>
+                  <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginTop: 4 }}>{notif.message}</Text>
+                  <Text variant="caption" color={theme.colors.inkSoft} style={{ marginTop: 8 }}>
+                    {new Date(notif.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                {!notif.isRead && <View style={styles.unreadDot} />}
+              </Pressable>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );

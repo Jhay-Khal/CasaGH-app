@@ -5,11 +5,34 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
+import { Alert } from 'react-native';
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+
+  const handleRegister = async () => {
+    if (!name || !email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response: any = await api.post('/auth/register', { name, email, password });
+      login(response.token, response.user);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.message || 'Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -43,9 +66,10 @@ export default function Register() {
           />
 
           <Button 
-            label="Sign Up" 
-            onPress={() => router.replace('/(tabs)')} 
+            label={loading ? "Signing up..." : "Sign Up"} 
+            onPress={handleRegister} 
             style={{ marginTop: 24, marginBottom: 16 }}
+            disabled={loading}
           />
 
           <View style={styles.footerRow}>

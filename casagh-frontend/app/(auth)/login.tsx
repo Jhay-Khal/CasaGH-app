@@ -5,10 +5,33 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
+import { Alert, ActivityIndicator } from 'react-native';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response: any = await api.post('/auth/login', { email, password });
+      login(response.token, response.user);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Check your credentials and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -36,9 +59,10 @@ export default function Login() {
           />
 
           <Button 
-            label="Sign In" 
-            onPress={() => router.replace('/(tabs)')} 
+            label={loading ? "Signing in..." : "Sign In"} 
+            onPress={handleLogin} 
             style={{ marginTop: 24, marginBottom: 16 }}
+            disabled={loading}
           />
 
           <View style={styles.footerRow}>

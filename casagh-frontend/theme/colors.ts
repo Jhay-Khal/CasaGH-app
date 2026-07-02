@@ -15,6 +15,9 @@ export const colors = {
   warning: '#9A6A18',
   warningBg: '#FCF1DD',
   dangerBg: '#F8E5E2',
+
+  brandRed: '#921A1D',  // Profile screen branding
+  brandRedBg: '#FCEBEA', // Profile screen light bg
 } as const;
 
 export type ColorToken = keyof typeof colors;

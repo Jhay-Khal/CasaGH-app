@@ -3,13 +3,49 @@ import { View, StyleSheet, SafeAreaView, ScrollView, Pressable, Image } from 're
 import { router } from 'expo-router';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
-
-const CONVERSATIONS = [
-  { id: '1', name: 'Evandy Hostel', lastMessage: 'Yes, we have study rooms available.', time: '10:42 AM', unread: 2, avatar: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267' },
-  { id: '2', name: 'Green Valley Hostel', lastMessage: 'Your booking has been confirmed! 🎉', time: 'Yesterday', unread: 0, avatar: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5' },
-];
+import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
+import { ActivityIndicator, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 export default function Inbox() {
+  const { user } = useAuth();
+  const [conversations, setConversations] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        fetchMessages();
+      } else {
+        setLoading(false);
+      }
+    }, [user])
+  );
+
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const data: any = await api.get(`/messages/received/${user?.id}`);
+      
+      // Basic grouping by property for inbox UI
+      const grouped = new Map();
+      data.forEach((msg: any) => {
+        const pId = msg.propertyId;
+        if (!grouped.has(pId) || new Date(msg.createdAt) > new Date(grouped.get(pId).createdAt)) {
+          grouped.set(pId, { ...msg, unread: 0 }); // Placeholder for unread count
+        }
+      });
+      
+      setConversations(Array.from(grouped.values()));
+    } catch (error: any) {
+      console.error('Failed to fetch messages:', error);
+      Alert.alert('Error', error.message || 'Failed to fetch messages.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -17,29 +53,41 @@ export default function Inbox() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {CONVERSATIONS.map(chat => (
-          <Pressable key={chat.id} style={styles.chatRow} onPress={() => router.push(`/chat/${chat.id}`)}>
-            <Image source={{ uri: chat.avatar }} style={styles.avatar} />
-            <View style={styles.chatDetails}>
-              <View style={styles.chatHeader}>
-                <Text variant="h3">{chat.name}</Text>
-                <Text variant="caption" color={chat.unread > 0 ? theme.colors.green700 : theme.colors.inkSoft} style={chat.unread > 0 && { fontFamily: theme.fontFamily.bodySemiBold }}>
-                  {chat.time}
-                </Text>
+        {!user ? (
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ textAlign: 'center', marginTop: 20 }}>
+            Please sign in to view messages.
+          </Text>
+        ) : loading ? (
+          <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 40 }} />
+        ) : conversations.length === 0 ? (
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ textAlign: 'center', marginTop: 20 }}>
+            No messages yet.
+          </Text>
+        ) : (
+          conversations.map((chat: any) => (
+            <Pressable key={chat.id} style={styles.chatRow} onPress={() => router.push(`/chat/${chat.propertyId}`)}>
+              <Image source={{ uri: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267' }} style={styles.avatar} />
+              <View style={styles.chatDetails}>
+                <View style={styles.chatHeader}>
+                  <Text variant="h3">Hostel {chat.propertyId}</Text>
+                  <Text variant="caption" color={chat.unread > 0 ? theme.colors.green700 : theme.colors.inkSoft} style={chat.unread > 0 && { fontFamily: theme.fontFamily.bodySemiBold }}>
+                    {new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+                <View style={styles.chatFooter}>
+                  <Text variant="bodyMd" color={theme.colors.inkSoft} numberOfLines={1} style={[{ flex: 1 }, chat.unread > 0 && { fontFamily: theme.fontFamily.bodySemiBold, color: theme.colors.ink }]}>
+                    {chat.content}
+                  </Text>
+                  {chat.unread > 0 && (
+                    <View style={styles.badge}>
+                      <Text variant="caption" color={theme.colors.white} style={{ fontFamily: theme.fontFamily.bodyBold }}>{chat.unread}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
-              <View style={styles.chatFooter}>
-                <Text variant="bodyMd" color={theme.colors.inkSoft} numberOfLines={1} style={[{ flex: 1 }, chat.unread > 0 && { fontFamily: theme.fontFamily.bodySemiBold, color: theme.colors.ink }]}>
-                  {chat.lastMessage}
-                </Text>
-                {chat.unread > 0 && (
-                  <View style={styles.badge}>
-                    <Text variant="caption" color={theme.colors.white} style={{ fontFamily: theme.fontFamily.bodyBold }}>{chat.unread}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </Pressable>
-        ))}
+            </Pressable>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
