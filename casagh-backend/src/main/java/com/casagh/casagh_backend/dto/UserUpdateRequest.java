@@ -1,0 +1,9 @@
+package com.casagh.casagh_backend.dto;
+
+import lombok.Data;
+
+@Data
+public class UserUpdateRequest {
+    private String fullName;
+    private String phone;
+}

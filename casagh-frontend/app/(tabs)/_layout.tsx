@@ -66,6 +66,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />
         }} 
       />
+      <Tabs.Screen 
+        name="upload" 
+        options={{ 
+          title: 'List a Property',
+          headerShown: false,
+          href: null,
+        }} 
+      />
     </Tabs>
   );
 }

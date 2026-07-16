@@ -1,14 +1,38 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
+import { login } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter your email and password');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await login(email, password);
+      // Save token and user info
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('userId', String(response.id));
+      await AsyncStorage.setItem('userEmail', response.email);
+      await AsyncStorage.setItem('userRole', response.role);
+      router.replace('/(tabs)');
+    } catch (error) {
+      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -18,10 +42,9 @@ export default function Login() {
           <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32 }}>
             Sign in to continue to CasaGH
           </Text>
-
           <Input 
             label="Email" 
-            placeholder="john.doe@student.knust.edu.gh" 
+            placeholder="your@email.com" 
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -34,16 +57,18 @@ export default function Login() {
             onChangeText={setPassword}
             secureTextEntry
           />
-
           <Button 
-            label="Sign In" 
-            onPress={() => router.replace('/(tabs)')} 
+            label={loading ? "Signing in..." : "Sign In"}
+            onPress={handleLogin}
             style={{ marginTop: 24, marginBottom: 16 }}
           />
-
           <View style={styles.footerRow}>
             <Text variant="bodyMd" color={theme.colors.inkSoft}>Don't have an account? </Text>
-            <Text variant="bodyMd" color={theme.colors.green700} style={{ fontFamily: theme.fontFamily.bodySemiBold }} onPress={() => router.push('/(auth)/register')}>
+            <Text 
+              variant="bodyMd" 
+              color={theme.colors.green700} 
+              style={{ fontFamily: theme.fontFamily.bodySemiBold }} 
+              onPress={() => router.push('/(auth)/register')}>
               Sign up
             </Text>
           </View>

@@ -1,28 +1,43 @@
-import React from 'react';
-import { ScrollView, View, Image, StyleSheet, Pressable, Linking, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, View, Image, StyleSheet, Pressable, Linking, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
+import { getPropertyById } from '../../services/api';
 
 export default function HostelDetails() {
   const { id } = useLocalSearchParams();
+  const [property, setProperty] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const isGreenValley = id === '1';
-  const name = isGreenValley ? "Green Valley Hostel" : "Evandy Hostel";
-  const imageUrl = isGreenValley ? "https://images.unsplash.com/photo-1555854877-bab0e564b8d5" : "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267";
-  const price = isGreenValley ? 85 : 120;
+  useEffect(() => {
+    loadProperty();
+  }, [id]);
+
+  async function loadProperty() {
+    try {
+      const data = await getPropertyById(Number(id));
+      setProperty(data);
+    } catch (error) {
+      console.error('Failed to load property:', error);
+      Alert.alert('Error', 'Could not load property details');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleWhatsApp = async () => {
-    const url = 'whatsapp://send?phone=+233551234567&text=Hello,%20I%20am%20interested%20in%20your%20hostel.';
+    const phone = property?.ownerPhone || '233551234567';
+    const url = `whatsapp://send?phone=+${phone}&text=Hello,%20I%20am%20interested%20in%20your%20property.`;
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
       } else {
-        await Linking.openURL('https://wa.me/233551234567');
+        await Linking.openURL(`https://wa.me/${phone}`);
       }
     } catch (e) {
       Alert.alert('Error', 'Could not open WhatsApp');
@@ -30,13 +45,34 @@ export default function HostelDetails() {
   };
 
   const handleCall = async () => {
-    const url = 'tel:+233551234567';
+    const phone = property?.ownerPhone || '233551234567';
     try {
-      await Linking.openURL(url);
+      await Linking.openURL(`tel:+${phone}`);
     } catch (e) {
       Alert.alert('Error', 'Could not open Phone dialer');
     }
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={theme.colors.green900} />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text variant="h3" color={theme.colors.inkSoft}>Property not found</Text>
+        <Button label="Go Back" onPress={() => router.back()} style={{ marginTop: 16 }} />
+      </View>
+    );
+  }
+
+  const imageUrl = property.images?.[0]?.imageUrl
+    || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5';
+  const isVerified = property.verificationStatus === 'APPROVED';
 
   return (
     <View style={styles.container}>
@@ -50,17 +86,17 @@ export default function HostelDetails() {
             <Ionicons name="heart-outline" size={24} color={theme.colors.ink} />
           </Pressable>
         </View>
-        
+
         <View style={styles.details}>
           <View style={styles.titleRow}>
-            <Text variant="h1">{name}</Text>
-            {isGreenValley && <Badge label="Verified host" kind="success" />}
+            <Text variant="h1">{property.title}</Text>
+            {isVerified && <Badge label="Verified" kind="success" />}
           </View>
-          
+
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color={theme.colors.inkSoft} style={{ marginRight: 6 }} />
             <Text variant="bodyMd" color={theme.colors.inkSoft}>
-              Kumasi, Ashanti Region
+              {property.area}, {property.city}
             </Text>
           </View>
 
@@ -68,38 +104,34 @@ export default function HostelDetails() {
 
           <Text variant="h2" style={{ marginBottom: 12 }}>About this stay</Text>
           <Text variant="bodyLg" color={theme.colors.ink} style={{ lineHeight: 26 }}>
-            This is a beautiful and serene environment located very close to KNUST campus. It features 24/7 security, continuous water supply, and high-speed Wi-Fi.
+            {property.description || 'No description available.'}
           </Text>
 
           <View style={styles.divider} />
-          
-          <Text variant="h2" style={{ marginBottom: 16 }}>Amenities</Text>
+
+          <Text variant="h2" style={{ marginBottom: 16 }}>Property Details</Text>
           <View style={styles.amenityRow}>
             <View style={styles.amenityItem}>
-              <Ionicons name="wifi" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">High-Speed Wi-Fi</Text>
+              <Ionicons name="home" size={20} color={theme.colors.green700} />
+              <Text variant="bodyMd">Type: {property.type}</Text>
             </View>
             <View style={styles.amenityItem}>
-              <Ionicons name="shield-checkmark" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">24/7 Security</Text>
+              <Ionicons name="location" size={20} color={theme.colors.green700} />
+              <Text variant="bodyMd">Region: {property.region}</Text>
             </View>
             <View style={styles.amenityItem}>
-              <Ionicons name="flash" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">Backup Generator</Text>
-            </View>
-            <View style={styles.amenityItem}>
-              <Ionicons name="book" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">Study Rooms</Text>
+              <Ionicons name="swap-horizontal" size={20} color={theme.colors.green700} />
+              <Text variant="bodyMd">{property.isForRent ? 'Available for Rent' : 'For Sale'}</Text>
             </View>
           </View>
 
           <View style={styles.divider} />
-          
+
           <Button variant="secondary" label="View Photo Gallery" onPress={() => router.push(`/hostel/gallery/${id}`)} leftIcon={<Ionicons name="images-outline" size={20} color={theme.colors.green700} />} style={{ marginBottom: 12 }} />
-          <Button variant="secondary" label="Read 120 Reviews" onPress={() => router.push(`/hostel/reviews/${id}`)} leftIcon={<Ionicons name="star-outline" size={20} color={theme.colors.green700} />} />
-          
+          <Button variant="secondary" label="Read Reviews" onPress={() => router.push(`/hostel/reviews/${id}`)} leftIcon={<Ionicons name="star-outline" size={20} color={theme.colors.green700} />} />
+
           <View style={styles.divider} />
-          
+
           <Text variant="h2" style={{ marginBottom: 16 }}>Contact Host</Text>
           <View style={styles.contactRow}>
             <Pressable style={[styles.contactBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
@@ -117,7 +149,7 @@ export default function HostelDetails() {
       <View style={styles.footer}>
         <View>
           <Text variant="h2" color={theme.colors.green700}>
-            Starting from ₵{price}
+            Starting from ₵{property.price}
           </Text>
         </View>
         <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} />
@@ -153,11 +185,11 @@ const styles = StyleSheet.create({
   amenityItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   contactRow: { flexDirection: 'row', gap: 12 },
   contactBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: theme.radius.md, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  footer: { 
-    position: 'absolute', bottom: 0, left: 0, right: 0, 
+  footer: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: theme.spacing.sp4, backgroundColor: theme.colors.white,
     borderTopWidth: 1, borderTopColor: theme.colors.line,
-    paddingBottom: 32 // Safe area approx
+    paddingBottom: 32
   }
 });
