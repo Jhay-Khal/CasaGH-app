@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { SafeAreaView, ScrollView, View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
@@ -9,6 +9,7 @@ import { Chip } from '../../components/Chip';
 import { ListingCard } from '../../components/ListingCard';
 import { Input } from '../../components/Input';
 import { getProperties, getPropertyImage, getSavedProperties, saveProperty, unsaveProperty } from '../../services/api';
+import { useFilters } from '../../context/FilterContext';
 
 export default function Explore() {
   const [properties, setProperties] = useState([]);
@@ -17,17 +18,24 @@ export default function Explore() {
   const [isOwner, setIsOwner] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    loadProperties();
-    checkOwnerStatus();
-    loadSavedIds();
-  }, []);
+  const { filters, applyFilters, activeFilterCount, setProperties: setContextProperties } = useFilters();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProperties();
+      checkOwnerStatus();
+      loadSavedIds();
+    }, [])
+  );
 
   async function loadProperties() {
+    setLoading(true);
     try {
       const data = await getProperties();
       setProperties(data);
+      setContextProperties(data);
     } catch (error) {
       console.error('Failed to load properties:', error);
     } finally {
@@ -63,15 +71,12 @@ export default function Explore() {
       router.push('/(auth)/login');
       return;
     }
-
     const isSaved = savedIds.has(propertyId);
-    // Update UI immediately, then sync with the server
     setSavedIds((prev) => {
       const next = new Set(prev);
       isSaved ? next.delete(propertyId) : next.add(propertyId);
       return next;
     });
-
     try {
       if (isSaved) {
         await unsaveProperty(userId, propertyId);
@@ -80,7 +85,6 @@ export default function Explore() {
       }
     } catch (error) {
       console.error('Failed to toggle save:', error);
-      // Revert on failure
       setSavedIds((prev) => {
         const next = new Set(prev);
         isSaved ? next.add(propertyId) : next.delete(propertyId);
@@ -89,16 +93,29 @@ export default function Explore() {
     }
   }
 
-  const filtered = filter === 'All'
-    ? properties
-    : properties.filter((p: any) => p.type === filter.toUpperCase().replace('S', ''));
+  const filtered = useMemo(() => {
+    let list = filter === 'All'
+      ? properties
+      : properties.filter((p: any) => p.type === filter);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((p: any) =>
+        p.title?.toLowerCase().includes(q) ||
+        p.area?.toLowerCase().includes(q) ||
+        p.city?.toLowerCase().includes(q)
+      );
+    }
+
+    return applyFilters(list);
+  }, [properties, filter, searchQuery, filters]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
 
-          {/* Header with CasaGH Logo */}
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoRow}>
               <View style={styles.logoIcon}>
@@ -119,26 +136,39 @@ export default function Explore() {
             </View>
           </View>
 
-          {/* Search Bar */}
-          <Pressable onPress={() => router.push('/modals/filters')}>
-            <View pointerEvents="none">
-              <Input
-                placeholder="Where do you want to stay?"
-                style={styles.searchInput}
-                leftIcon={<Ionicons name="search" size={20} color={theme.colors.inkSoft} />}
-              />
-            </View>
-          </Pressable>
+          {/* Search Bar + Filter Button */}
+          <View style={styles.searchRow}>
+            <Input
+              placeholder="Where do you want to stay?"
+              style={styles.searchInputFlex}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              leftIcon={<Ionicons name="search" size={20} color={theme.colors.inkSoft} />}
+            />
+            <Pressable style={styles.filterBtn} onPress={() => router.push('/modals/filters')}>
+              <Ionicons name="options-outline" size={22} color={theme.colors.white} />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text variant="caption" color={theme.colors.white}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
 
           {/* Filter Chips */}
           <View style={styles.chipRow}>
-            {['All', 'Hostel', 'Apartment', 'House'].map((label) => (
+            {[
+              { label: 'All', value: 'All' },
+              { label: 'Hostels', value: 'HOSTEL' },
+              { label: 'Apartments', value: 'APARTMENT' },
+              { label: 'Houses', value: 'HOUSE' },
+            ].map((item) => (
               <Chip
-                key={label}
-                label={label + (label !== 'All' ? 's' : '')}
-                active={filter === label}
-                outline={filter !== label}
-                onPress={() => setFilter(label)}
+                key={item.value}
+                label={item.label}
+                active={filter === item.value}
+                outline={filter !== item.value}
+                onPress={() => setFilter(item.value)}
               />
             ))}
           </View>
@@ -146,7 +176,7 @@ export default function Explore() {
           {/* Section Title */}
           <View style={styles.sectionHeader}>
             <Text variant="h2" color={theme.colors.navy}>
-              {filter === 'All' ? 'All Properties' : filter + 's Near You'}
+              {filter === 'All' ? 'All Properties' : filter.charAt(0) + filter.slice(1).toLowerCase() + 's Near You'}
             </Text>
             <Text variant="caption" color={theme.colors.teal700}>
               {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
@@ -211,116 +241,67 @@ export default function Explore() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.colors.teal50,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 480,
-    paddingHorizontal: theme.spacing.sp4,
-  },
+  safe: { flex: 1, backgroundColor: theme.colors.teal50 },
+  scrollContent: { flexGrow: 1, alignItems: 'center', paddingBottom: 100 },
+  content: { width: '100%', maxWidth: 480, paddingHorizontal: theme.spacing.sp4 },
   header: {
-    marginBottom: 20,
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 20, marginTop: 12,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 40, height: 40, borderRadius: 12,
     backgroundColor: theme.colors.navy,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: theme.colors.teal100,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   avatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: theme.colors.teal100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: theme.colors.teal700,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: theme.colors.teal700,
   },
-  searchInput: {
-    marginBottom: 16,
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  searchInputFlex: { flex: 1, marginBottom: 0 },
+  filterBtn: {
+    width: 48, height: 48, borderRadius: 14,
+    backgroundColor: theme.colors.navy,
+    alignItems: 'center', justifyContent: 'center',
   },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginBottom: 8,
+  filterBadge: {
+    position: 'absolute', top: -4, right: -4,
+    backgroundColor: theme.colors.gold,
+    borderRadius: 10, minWidth: 18, height: 18,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
+  chipRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 14,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: 20, marginBottom: 14,
   },
-  loadingState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyState: {
-    alignItems: 'center',
-    marginTop: 40,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-  },
+  loadingState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+  emptyState: { alignItems: 'center', marginTop: 40, paddingHorizontal: 24, paddingVertical: 32 },
   emptyIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: theme.colors.teal100,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   fabWrap: {
-    position: 'absolute',
-    bottom: 24,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    gap: 10,
+    position: 'absolute', bottom: 24, left: 0, right: 0,
+    alignItems: 'center', gap: 10,
   },
   fab: {
     backgroundColor: theme.colors.navy,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 22, paddingVertical: 13,
     borderRadius: 30,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
-  fabSecondary: {
-    backgroundColor: theme.colors.teal700,
-  },
+  fabSecondary: { backgroundColor: theme.colors.teal700 },
 });

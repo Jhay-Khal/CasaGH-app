@@ -3,28 +3,31 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
 // ─── Property Images by Type ───────────────────────────────────────────────
 const PROPERTY_IMAGES: Record<string, string[]> = {
   HOSTEL: [
-    'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800',
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-    'https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800',
+    'https://i.imgur.com/yWx4rqy.jpeg',
+    'https://i.imgur.com/GRWr6aR.jpeg',
+    'https://i.imgur.com/hqhZlda.jpeg',
   ],
   APARTMENT: [
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
-    'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800',
+    'https://i.imgur.com/kdme6FR.jpeg',
+    'https://i.imgur.com/d0rDxnx.jpeg',
   ],
   HOUSE: [
-    'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800',
-    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
-    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800',
+    'https://i.imgur.com/71ZMjk0.jpeg',
+    'https://i.imgur.com/99OS2eV.jpeg',
+    'https://i.imgur.com/A5zlkfV.jpeg',
+    'https://i.imgur.com/4NKtdfo.jpeg',
   ],
 };
 
-export function getPropertyImage(type: string, id: number): string {
-  const images = PROPERTY_IMAGES[type] || PROPERTY_IMAGES['HOSTEL'];
-  return images[id % images.length];
+export function getPropertyImage(type: string, id: number, images?: any[]): string {
+  if (images && images.length > 0 && images[0]?.imageUrl) {
+    return images[0].imageUrl;
+  }
+  const placeholders = PROPERTY_IMAGES[type] || PROPERTY_IMAGES['HOSTEL'];
+  return placeholders[id % placeholders.length];
 }
 
-// ─── Helper: extract a readable error message from a failed response ──────
+// ─── Helper ───────────────────────────────────────────────────────────────
 async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
     const data = await res.json();
@@ -77,6 +80,9 @@ export async function createProperty(propertyData: {
   area: string;
   latitude?: number;
   longitude?: number;
+  roomType?: string;
+  pricingUnit?: string;
+  amenities?: string[];
 }) {
   const res = await fetch(`${BASE_URL}/properties`, {
     method: 'POST',
@@ -95,22 +101,60 @@ export async function uploadPropertyImage(propertyId: number, imageUri: string) 
   const filename = imageUri.split('/').pop() || 'photo.jpg';
   const match = /\.(\w+)$/.exec(filename);
   const fileType = match ? `image/${match[1]}` : 'image/jpeg';
-
   formData.append('file', {
     uri: imageUri,
     name: filename,
     type: fileType,
   } as any);
-
   const res = await fetch(`${BASE_URL}/images/${propertyId}`, {
     method: 'POST',
     body: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
   });
   if (!res.ok) {
     const message = await extractErrorMessage(res, 'Failed to upload image');
     throw new Error(message);
   }
+  return res.json();
+}
+
+export async function uploadPropertyDocument(propertyId: number, document: any) {
+  const formData = new FormData();
+  formData.append('file', {
+    uri: document.uri,
+    name: document.name,
+    type: document.mimeType || 'application/pdf',
+  } as any);
+  const res = await fetch(`${BASE_URL}/properties/${propertyId}/document`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const message = await extractErrorMessage(res, 'Failed to upload document');
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+// ─── Admin ────────────────────────────────────────────────────────────────
+export async function getPendingProperties() {
+  const res = await fetch(`${BASE_URL}/properties/pending`);
+  if (!res.ok) throw new Error('Failed to fetch pending properties');
+  return res.json();
+}
+
+export async function approveProperty(propertyId: number) {
+  const res = await fetch(`${BASE_URL}/properties/${propertyId}/approve`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Failed to approve property');
+  return res.json();
+}
+
+export async function rejectProperty(propertyId: number) {
+  const res = await fetch(`${BASE_URL}/properties/${propertyId}/reject`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Failed to reject property');
   return res.json();
 }
 
@@ -278,9 +322,12 @@ export async function getUserBookings(userId: number) {
   return res.json();
 }
 
-export async function initiatePayment(bookingId: number) {
+// ─── FIXED: now sends email to Paystack ───────────────────────────────────
+export async function initiatePayment(bookingId: number, email: string) {
   const res = await fetch(`${BASE_URL}/bookings/${bookingId}/pay`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
   });
   if (!res.ok) {
     const message = await extractErrorMessage(res, 'Failed to start payment');
@@ -292,6 +339,26 @@ export async function initiatePayment(bookingId: number) {
 export async function verifyPayment(reference: string) {
   const res = await fetch(`${BASE_URL}/bookings/verify/${reference}`);
   if (!res.ok) throw new Error('Failed to verify payment');
+  return res.json();
+}
+
+// ─── Listing Fee ──────────────────────────────────────────────────────────
+export async function initiateListingPayment(propertyId: number, email: string) {
+  const res = await fetch(`${BASE_URL}/listing-payment/initiate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ propertyId, email }),
+  });
+  if (!res.ok) {
+    const message = await extractErrorMessage(res, 'Failed to initiate listing payment');
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function verifyListingPayment(reference: string) {
+  const res = await fetch(`${BASE_URL}/listing-payment/verify/${reference}`);
+  if (!res.ok) throw new Error('Failed to verify listing payment');
   return res.json();
 }
 

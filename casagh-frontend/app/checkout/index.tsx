@@ -53,7 +53,9 @@ export default function Checkout() {
     setProcessing(true);
     try {
       const userIdStr = await AsyncStorage.getItem('userId');
-      if (!userIdStr) {
+      const userEmail = await AsyncStorage.getItem('userEmail');
+
+      if (!userIdStr || !userEmail) {
         Alert.alert('Not signed in', 'Please log in to complete your booking.');
         setProcessing(false);
         return;
@@ -63,8 +65,8 @@ export default function Checkout() {
       // 1. Create the booking (status: PENDING)
       const booking = await createBooking(Number(propertyId), userId, checkIn, checkOut);
 
-      // 2. Ask backend to initialize a Paystack transaction for this booking
-      const payment = await initiatePayment(booking.id);
+      // 2. Initialize Paystack transaction with email
+      const payment = await initiatePayment(booking.id, userEmail);
 
       // 3. Open Paystack's hosted checkout page
       const canOpen = await Linking.canOpenURL(payment.authorizationUrl);
@@ -72,8 +74,7 @@ export default function Checkout() {
         await Linking.openURL(payment.authorizationUrl);
       }
 
-      // 4. Move to a screen where the user confirms they've completed payment,
-      //    which then verifies the transaction with Paystack.
+      // 4. Move to success screen
       router.push({
         pathname: '/checkout/success',
         params: { reference: payment.reference },

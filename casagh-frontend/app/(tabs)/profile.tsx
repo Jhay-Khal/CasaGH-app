@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser } from '../../services/api';
+import { useState } from 'react';
 
 function getInitials(name: string): string {
   if (!name) return '?';
@@ -31,9 +32,10 @@ interface MenuRowProps {
   onPress?: () => void;
   isLast?: boolean;
   danger?: boolean;
+  highlight?: boolean;
 }
 
-function MenuRow({ icon, label, onPress, isLast, danger }: MenuRowProps) {
+function MenuRow({ icon, label, onPress, isLast, danger, highlight }: MenuRowProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -43,12 +45,20 @@ function MenuRow({ icon, label, onPress, isLast, danger }: MenuRowProps) {
         pressed && styles.menuRowPressed,
       ]}
     >
-      <View style={[styles.menuIconWrap, danger && { backgroundColor: theme.colors.dangerBg }]}>
-        <Ionicons name={icon} size={18} color={danger ? theme.colors.danger : theme.colors.teal700} />
+      <View style={[
+        styles.menuIconWrap,
+        danger && { backgroundColor: theme.colors.dangerBg },
+        highlight && { backgroundColor: '#FDF6E3' },
+      ]}>
+        <Ionicons
+          name={icon}
+          size={18}
+          color={danger ? theme.colors.danger : highlight ? '#C9A84C' : theme.colors.teal700}
+        />
       </View>
       <Text
         variant="bodyMd"
-        color={danger ? theme.colors.danger : theme.colors.ink}
+        color={danger ? theme.colors.danger : highlight ? '#C9A84C' : theme.colors.ink}
         style={{ flex: 1, marginLeft: 12, fontFamily: theme.fontFamily.bodySemiBold }}
       >
         {label}
@@ -76,7 +86,6 @@ export default function Profile() {
       const userIdStr = await AsyncStorage.getItem('userId');
       if (email) setUserEmail(email);
       if (role) setUserRole(role);
-
       if (userIdStr) {
         const user = await getUser(parseInt(userIdStr, 10));
         setFullName(user.fullName || '');
@@ -88,7 +97,7 @@ export default function Profile() {
 
   async function handleSignOut() {
     try {
-      await AsyncStorage.multiRemove(['token', 'userId', 'userEmail', 'userRole']);
+      await AsyncStorage.multiRemove(['token', 'userId', 'userEmail', 'userRole', 'user']);
       router.replace('/onboarding');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -106,6 +115,7 @@ export default function Profile() {
             Profile
           </Text>
 
+          {/* Avatar & Info */}
           <View style={styles.header}>
             <View style={styles.avatarLarge}>
               <Text variant="h1" color={theme.colors.white}>
@@ -131,6 +141,25 @@ export default function Profile() {
             ) : null}
           </View>
 
+          {/* Admin Section — only shows for ADMIN */}
+          {userRole === 'ADMIN' && (
+            <>
+              <Text variant="caption" color={theme.colors.danger} style={styles.sectionLabel}>
+                ADMIN
+              </Text>
+              <View style={styles.menuCard}>
+                <MenuRow
+                  icon="shield-checkmark"
+                  label="Admin Dashboard"
+                  highlight
+                  onPress={() => router.push('/admin')}
+                  isLast
+                />
+              </View>
+            </>
+          )}
+
+          {/* Account Section */}
           <Text variant="caption" color={theme.colors.teal700} style={styles.sectionLabel}>
             ACCOUNT
           </Text>
@@ -144,12 +173,20 @@ export default function Profile() {
             <MenuRow icon="notifications-outline" label="Notifications" isLast />
           </View>
 
+          {/* Session Section */}
           <Text variant="caption" color={theme.colors.teal700} style={styles.sectionLabel}>
             SESSION
           </Text>
           <View style={styles.menuCard}>
-            <MenuRow icon="log-out-outline" label="Sign Out" onPress={handleSignOut} isLast danger />
+            <MenuRow
+              icon="log-out-outline"
+              label="Sign Out"
+              onPress={handleSignOut}
+              isLast
+              danger
+            />
           </View>
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -162,52 +199,33 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: 480, paddingHorizontal: theme.spacing.sp4, paddingTop: 12 },
   header: { alignItems: 'center', marginBottom: 28 },
   avatarLarge: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+    width: 92, height: 92, borderRadius: 46,
     backgroundColor: theme.colors.teal700,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     shadowColor: theme.colors.green900,
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.15, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
   roleBadge: {
-    marginTop: 10,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: theme.radius.pill,
+    marginTop: 10, paddingVertical: 4,
+    paddingHorizontal: 12, borderRadius: theme.radius.pill,
   },
   sectionLabel: { marginBottom: 8, marginLeft: 4, letterSpacing: 0.5 },
   menuCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.line,
-    marginBottom: 24,
-    overflow: 'hidden',
+    borderWidth: 1, borderColor: theme.colors.line,
+    marginBottom: 24, overflow: 'hidden',
   },
   menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: theme.spacing.sp4,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 14, paddingHorizontal: theme.spacing.sp4,
   },
-  menuRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.line,
-  },
-  menuRowPressed: {
-    backgroundColor: theme.colors.teal50,
-  },
+  menuRowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.line },
+  menuRowPressed: { backgroundColor: theme.colors.teal50 },
   menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 34, height: 34, borderRadius: 17,
     backgroundColor: theme.colors.teal100,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
 });

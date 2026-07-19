@@ -6,8 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.math.BigDecimal;
@@ -76,8 +79,31 @@ public class PropertyController {
         return ResponseEntity.ok(Map.of("status", "Property deleted"));
     }
 
-    // ─── Admin Verification ───────────────────────────────────
+    // ─── Document Upload ──────────────────────────────────────
+    @PostMapping("/{id}/document")
+    public ResponseEntity<?> uploadDocument(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String uploadsDir = "uploads/documents/";
+            java.io.File dir = new java.io.File(uploadsDir);
+            if (!dir.exists()) dir.mkdirs();
 
+            String filename = "doc_" + id + "_" + file.getOriginalFilename();
+            Path filePath = Paths.get(uploadsDir + filename);
+            Files.write(filePath, file.getBytes());
+
+            Property property = propertyService.getPropertyById(id);
+            property.setDocumentUrl(uploadsDir + filename);
+            propertyService.updateProperty(id, property);
+
+            return ResponseEntity.ok(Map.of("documentUrl", uploadsDir + filename));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Document upload failed: " + e.getMessage()));
+        }
+    }
+
+    // ─── Admin Verification ───────────────────────────────────
     @PutMapping("/{id}/approve")
     public ResponseEntity<Property> approveProperty(@PathVariable Long id) {
         return ResponseEntity.ok(propertyService.approveProperty(id));

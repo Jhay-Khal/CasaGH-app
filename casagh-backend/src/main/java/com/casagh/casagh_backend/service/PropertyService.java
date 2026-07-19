@@ -22,22 +22,22 @@ public class PropertyService {
     private final NotificationService notificationService;
 
     public List<Property> getAllActiveProperties() {
-        return propertyRepository.findByIsActiveTrue();
+        return propertyRepository.findByIsActiveTrueAndVerificationStatus("APPROVED");
     }
 
     public Page<Property> getAllActivePropertiesPaged(int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
-        return propertyRepository.findByIsActiveTrue(pageable);
+        return propertyRepository.findByIsActiveTrueAndVerificationStatus("APPROVED", pageable);
     }
 
     public Page<Property> getPropertiesByCityPaged(String city, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return propertyRepository.findByCity(city, pageable);
+        return propertyRepository.findByCityAndIsActiveTrueAndVerificationStatus(city, "APPROVED", pageable);
     }
 
     public Page<Property> getPropertiesByTypePaged(String type, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return propertyRepository.findByType(type, pageable);
+        return propertyRepository.findByTypeAndIsActiveTrueAndVerificationStatus(type, "APPROVED", pageable);
     }
 
     public Property getPropertyById(Long id) {
@@ -76,6 +76,9 @@ public class PropertyService {
         property.setRegion(updatedProperty.getRegion());
         property.setArea(updatedProperty.getArea());
         property.setIsForRent(updatedProperty.getIsForRent());
+        if (updatedProperty.getDocumentUrl() != null) {
+            property.setDocumentUrl(updatedProperty.getDocumentUrl());
+        }
         return propertyRepository.save(property);
     }
 
@@ -83,21 +86,21 @@ public class PropertyService {
         propertyRepository.deleteById(id);
     }
 
-    // ─── Admin Verification ───────────────────────────────────
-
     public Property approveProperty(Long propertyId) {
         Property property = getPropertyById(propertyId);
         property.setVerificationStatus("APPROVED");
         Property saved = propertyRepository.save(property);
 
         User owner = property.getOwner();
-        notificationService.createNotification(
-                owner,
-                "PROPERTY_APPROVED",
-                "Your property \"" + property.getTitle() + "\" has been approved!",
-                property.getId(),
-                null
-        );
+        if (owner != null) {
+            notificationService.createNotification(
+                    owner,
+                    "PROPERTY_APPROVED",
+                    "Your property \"" + property.getTitle() + "\" has been approved and is now live!",
+                    property.getId(),
+                    null
+            );
+        }
 
         return saved;
     }
@@ -108,13 +111,15 @@ public class PropertyService {
         Property saved = propertyRepository.save(property);
 
         User owner = property.getOwner();
-        notificationService.createNotification(
-                owner,
-                "PROPERTY_REJECTED",
-                "Your property \"" + property.getTitle() + "\" was not approved.",
-                property.getId(),
-                null
-        );
+        if (owner != null) {
+            notificationService.createNotification(
+                    owner,
+                    "PROPERTY_REJECTED",
+                    "Your property \"" + property.getTitle() + "\" was not approved. Please contact support.",
+                    property.getId(),
+                    null
+            );
+        }
 
         return saved;
     }
@@ -127,6 +132,6 @@ public class PropertyService {
 
     public Page<Property> getPropertiesPaginated(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return propertyRepository.findAll(pageable);
+        return propertyRepository.findByIsActiveTrueAndVerificationStatus("APPROVED", pageable);
     }
 }

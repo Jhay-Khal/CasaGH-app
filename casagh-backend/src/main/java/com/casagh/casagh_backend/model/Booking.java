@@ -24,7 +24,13 @@ public class Booking {
 
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
+
     private Double totalPrice;
+
+    // Commission fields
+    private Double commissionRate;    // e.g. 7.0 (percent)
+    private Double commissionAmount;  // e.g. 70.0 (GHS)
+    private Double landlordAmount;    // e.g. 930.0 (GHS)
 
     private String status = "PENDING"; // PENDING, CONFIRMED, CANCELLED
 

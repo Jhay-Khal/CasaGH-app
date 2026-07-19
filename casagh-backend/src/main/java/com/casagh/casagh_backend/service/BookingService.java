@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -21,6 +22,8 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
+
+    private static final double COMMISSION_RATE = 0.07; // 7%
 
     public Booking createBooking(BookingRequest request) {
         Property property = propertyRepository.findById(request.getPropertyId())
@@ -37,12 +40,21 @@ public class BookingService {
         long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
         BigDecimal totalPrice = property.getPrice().multiply(BigDecimal.valueOf(nights));
 
+        // Calculate commission and landlord amount
+        BigDecimal commission = totalPrice.multiply(BigDecimal.valueOf(COMMISSION_RATE))
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal landlordAmount = totalPrice.subtract(commission)
+                .setScale(2, RoundingMode.HALF_UP);
+
         Booking booking = new Booking();
         booking.setProperty(property);
         booking.setUser(user);
         booking.setCheckInDate(request.getCheckInDate());
         booking.setCheckOutDate(request.getCheckOutDate());
         booking.setTotalPrice(totalPrice.doubleValue());
+        booking.setCommissionRate(COMMISSION_RATE * 100);
+        booking.setCommissionAmount(commission.doubleValue());
+        booking.setLandlordAmount(landlordAmount.doubleValue());
         booking.setStatus("PENDING");
 
         return bookingRepository.save(booking);
@@ -69,5 +81,19 @@ public class BookingService {
     public Booking getBookingById(Long id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found!"));
+    }
+
+    public Double getTotalCommissionEarned() {
+        return bookingRepository.findAll().stream()
+                .filter(b -> "CONFIRMED".equals(b.getStatus()))
+                .mapToDouble(b -> b.getCommissionAmount() != null ? b.getCommissionAmount() : 0)
+                .sum();
+    }
+
+    public Double getTotalLandlordPayouts() {
+        return bookingRepository.findAll().stream()
+                .filter(b -> "CONFIRMED".equals(b.getStatus()))
+                .mapToDouble(b -> b.getLandlordAmount() != null ? b.getLandlordAmount() : 0)
+                .sum();
     }
 }
