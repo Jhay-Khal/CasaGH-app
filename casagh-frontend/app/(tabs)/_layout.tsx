@@ -29,7 +29,7 @@ export default function TabLayout() {
           title: 'Explore',
           tabBarLabel: 'Explore',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <Ionicons name="earth" size={size} color={color} />
         }} 
       />
       <Tabs.Screen 
@@ -37,7 +37,8 @@ export default function TabLayout() {
         options={{ 
           title: 'Saved',
           tabBarLabel: 'Saved',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" size={size} color={color} />
         }} 
       />
       <Tabs.Screen 
@@ -46,7 +47,7 @@ export default function TabLayout() {
           title: 'Inbox',
           tabBarLabel: 'Inbox',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
         }} 
       />
       <Tabs.Screen 
@@ -54,7 +55,7 @@ export default function TabLayout() {
         options={{ 
           title: 'Bookings',
           tabBarLabel: 'Bookings',
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" size={size} color={color} />
         }} 
       />
       <Tabs.Screen 
@@ -63,7 +64,7 @@ export default function TabLayout() {
           title: 'Profile',
           tabBarLabel: 'Profile',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />
         }} 
       />
       <Tabs.Screen 

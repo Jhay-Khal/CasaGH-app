@@ -76,6 +76,10 @@ export default function HostelDetails() {
 
   return (
     <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 60 }} />
+      ) : (
+      <>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.imageWrap}>
           <Image source={{ uri: imageUrl }} style={styles.image} />
@@ -152,8 +156,10 @@ export default function HostelDetails() {
             Starting from ₵{property.price}
           </Text>
         </View>
-        <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} />
+        <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} disabled={loading} />
       </View>
+      </>
+      )}
     </View>
   );
 }

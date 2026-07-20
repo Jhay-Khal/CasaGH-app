@@ -4,12 +4,57 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
+import { useAuth } from '../../app/context/AuthContext';
+import { api } from '../../app/api/client';
+import { ActivityIndicator, Alert } from 'react-native';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
+  const { user } = useAuth();
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   
-  const hostName = id === '1' ? 'Evandy Hostel' : 'Green Valley Hostel';
+  React.useEffect(() => {
+    fetchMessages();
+  }, [id]);
+
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const data: any = await api.get(`/messages/property/${id}`);
+      setMessages(data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch messages:', error);
+      Alert.alert('Error', error.message || 'Failed to fetch messages.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!message.trim() || !user || sending) return;
+    try {
+      setSending(true);
+      const receiverId = 1; // Placeholder for host ID
+      const newMessage = await api.post('/messages', {
+        senderId: user.id,
+        receiverId,
+        propertyId: id,
+        content: message.trim()
+      });
+      setMessages([...messages, newMessage]);
+      setMessage('');
+    } catch (error: any) {
+      console.error('Failed to send message:', error);
+      Alert.alert('Error', error.message || 'Failed to send message.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const hostName = 'Hostel Host';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -27,20 +72,21 @@ export default function ChatScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <Text variant="caption" style={styles.dateBanner}>Today</Text>
           
-          <View style={styles.bubbleLeft}>
-            <Text variant="bodyMd" color={theme.colors.ink}>Hello! Are you interested in a 2-in-a-room?</Text>
-            <Text variant="caption" color={theme.colors.inkSoft} style={styles.timeLabel}>10:40 AM</Text>
-          </View>
-          
-          <View style={styles.bubbleRight}>
-            <Text variant="bodyMd" color={theme.colors.white}>Yes, do you have any left with AC?</Text>
-            <Text variant="caption" color={theme.colors.green100} style={styles.timeLabel}>10:41 AM</Text>
-          </View>
-
-          <View style={styles.bubbleLeft}>
-            <Text variant="bodyMd" color={theme.colors.ink}>Yes, we have study rooms available too.</Text>
-            <Text variant="caption" color={theme.colors.inkSoft} style={styles.timeLabel}>10:42 AM</Text>
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 40 }} />
+          ) : (
+            messages.map((msg: any) => {
+              const isMine = msg.senderId === user?.id;
+              return (
+                <View key={msg.id} style={isMine ? styles.bubbleRight : styles.bubbleLeft}>
+                  <Text variant="bodyMd" color={isMine ? theme.colors.white : theme.colors.ink}>{msg.content}</Text>
+                  <Text variant="caption" color={isMine ? theme.colors.green100 : theme.colors.inkSoft} style={styles.timeLabel}>
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
 
         <View style={styles.inputArea}>
@@ -54,8 +100,12 @@ export default function ChatScreen() {
             onChangeText={setMessage}
             placeholderTextColor={theme.colors.inkSoft}
           />
-          <Pressable style={[styles.sendBtn, message.length > 0 && styles.sendBtnActive]}>
-            <Ionicons name="send" size={20} color={message.length > 0 ? theme.colors.white : theme.colors.inkSoft} style={{ marginLeft: 2 }} />
+          <Pressable style={[styles.sendBtn, message.length > 0 && styles.sendBtnActive]} onPress={handleSend} disabled={sending}>
+            {sending ? (
+              <ActivityIndicator size="small" color={theme.colors.white} />
+            ) : (
+              <Ionicons name="send" size={20} color={message.length > 0 ? theme.colors.white : theme.colors.inkSoft} style={{ marginLeft: 2 }} />
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

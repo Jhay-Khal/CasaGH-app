@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,6 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUser } from '../../services/api';
-import { useState } from 'react';
 
 function getInitials(name: string): string {
   if (!name) return '?';

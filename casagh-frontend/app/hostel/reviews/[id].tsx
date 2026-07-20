@@ -1,17 +1,33 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, SafeAreaView, Pressable, Image } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../../theme';
 import { Text } from '../../../components/Text';
-
-const REVIEWS = [
-  { id: '1', name: 'Alice Osei', date: 'Aug 2025', rating: 5, text: 'Amazing hostel! The Wi-Fi is super fast and the study rooms are very quiet. Definitely worth the price.', avatar: 'https://images.unsplash.com/photo-1531123897727-8f129e1bfa8ea' },
-  { id: '2', name: 'Kwame Mensah', date: 'May 2025', rating: 4, text: 'Great place, very secure. The only downside is the distance to the main gate, but shuttles are available.', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d' },
-  { id: '3', name: 'Sandra Yeboah', date: 'Jan 2025', rating: 5, text: 'I stayed here for 2 years and never had an issue with water or electricity. The management is very responsive.', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' },
-];
+import { api } from '../../api/client';
+import { ActivityIndicator } from 'react-native';
 
 export default function Reviews() {
+  const { id } = useLocalSearchParams();
+  const [reviews, setReviews] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchReviews();
+  }, [id]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const data: any = await api.get(`/reviews/property/${id}`);
+      setReviews(data || []);
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -28,25 +44,34 @@ export default function Reviews() {
           <View style={styles.starsRow}>
             {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={20} color={theme.colors.warning} />)}
           </View>
-          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginTop: 8 }}>Based on 120 reviews</Text>
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginTop: 8 }}>Based on {reviews.length} reviews</Text>
         </View>
 
-        {REVIEWS.map(rev => (
-          <View key={rev.id} style={styles.reviewCard}>
-            <View style={styles.revHeader}>
-              <Image source={{ uri: rev.avatar }} style={styles.avatar} />
-              <View style={{ flex: 1 }}>
-                <Text variant="h3">{rev.name}</Text>
-                <Text variant="caption" color={theme.colors.inkSoft}>{rev.date}</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 40 }} />
+        ) : (
+          reviews.map(rev => (
+            <View key={rev.id} style={styles.reviewCard}>
+              <View style={styles.revHeader}>
+                <Image source={{ uri: rev.user?.avatar || 'https://images.unsplash.com/photo-1531123897727-8f129e1bfa8ea' }} style={styles.avatar} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="h3">{rev.user?.name || "Guest"}</Text>
+                  <Text variant="caption" color={theme.colors.inkSoft}>{new Date(rev.createdAt).toDateString()}</Text>
+                </View>
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={14} color={theme.colors.white} style={{ marginRight: 4 }} />
+                  <Text variant="caption" color={theme.colors.white} style={{ fontFamily: theme.fontFamily.bodyBold }}>{rev.rating}.0</Text>
+                </View>
               </View>
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={14} color={theme.colors.white} style={{ marginRight: 4 }} />
-                <Text variant="caption" color={theme.colors.white} style={{ fontFamily: theme.fontFamily.bodyBold }}>{rev.rating}.0</Text>
-              </View>
+              <Text variant="bodyMd" style={{ marginTop: 12, lineHeight: 22 }}>{rev.comment}</Text>
             </View>
-            <Text variant="bodyMd" style={{ marginTop: 12, lineHeight: 22 }}>{rev.text}</Text>
+          ))
+        )}
+        {!loading && reviews.length === 0 && (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text variant="bodyMd" color={theme.colors.inkSoft}>No reviews yet.</Text>
           </View>
-        ))}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

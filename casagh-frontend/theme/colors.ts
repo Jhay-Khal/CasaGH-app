@@ -24,6 +24,7 @@ export const colors = {
   green500: '#22A35D',
   green100: '#DCFCE7',
   green50:  '#F0FDF4',
+  brandRed: '#921A1D',  // Profile screen branding
+  brandRedBg: '#FCEBEA', // Profile screen light bg
 } as const;
-
 export type ColorToken = keyof typeof colors;

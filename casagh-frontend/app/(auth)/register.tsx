@@ -115,6 +115,7 @@ export default function Register() {
             label={loading ? "Creating account..." : "Sign Up"}
             onPress={handleRegister}
             style={{ marginTop: 24, marginBottom: 16 }}
+            disabled={loading}
           />
           <View style={styles.footerRow}>
             <Text variant="bodyMd" color={theme.colors.inkSoft}>Already have an account? </Text>
