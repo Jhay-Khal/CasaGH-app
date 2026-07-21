@@ -4,11 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { Text } from './Text';
 
+function priceUnitLabel(unit?: string): string {
+  if (unit === 'ACADEMIC_YEAR') return '/year';
+  if (unit === 'TOTAL') return '';
+  return '/night'; // default, covers 'NIGHT' and undefined/legacy properties
+}
+
 interface Props {
   imageUrl: string;
   name: string;
   location: string;
   pricePerNight: number;
+  pricingUnit?: string;
   currency?: string;
   rating: number;
   reviewCount: number;
@@ -23,6 +30,7 @@ export function ListingCard({
   name,
   location,
   pricePerNight,
+  pricingUnit,
   currency = '₵',
   rating,
   reviewCount,
@@ -46,7 +54,6 @@ export function ListingCard({
           <Ionicons name={saved ? 'heart' : 'heart-outline'} size={20} color={saved ? theme.colors.danger : theme.colors.ink} />
         </Pressable>
       </View>
-
       <View style={styles.body}>
         <Text variant="h3">{name}</Text>
         <View style={styles.locationRow}>
@@ -55,13 +62,13 @@ export function ListingCard({
             {location}
           </Text>
         </View>
-
         <View style={styles.metaRow}>
           <Text variant="h3" color={theme.colors.green700}>
             {currency}{pricePerNight}
-            <Text variant="bodySm" color={theme.colors.inkSoft}> /night</Text>
+            {priceUnitLabel(pricingUnit) ? (
+              <Text variant="bodySm" color={theme.colors.inkSoft}> {priceUnitLabel(pricingUnit)}</Text>
+            ) : null}
           </Text>
-
           <Text variant="bodyMd" style={{ fontFamily: theme.fontFamily.bodySemiBold }}>
             <Ionicons name="star" size={14} color={theme.colors.warning} /> {rating.toFixed(1)} <Text variant="bodySm" color={theme.colors.inkSoft}>({reviewCount})</Text>
           </Text>

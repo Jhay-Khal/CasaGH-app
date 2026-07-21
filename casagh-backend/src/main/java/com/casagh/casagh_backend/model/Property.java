@@ -20,6 +20,9 @@ public class Property {
     @JoinColumn(name = "owner_id")
     private User owner;
 
+    @Transient
+    private Long ownerId;
+
     @Column(nullable = false)
     private String title;
 

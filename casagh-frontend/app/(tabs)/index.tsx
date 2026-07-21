@@ -211,6 +211,7 @@ export default function Explore() {
                 name={property.title}
                 location={`${property.area}, ${property.city}`}
                 pricePerNight={property.price}
+                pricingUnit={property.pricingUnit}
                 rating={4.5}
                 reviewCount={0}
                 verified={property.verificationStatus === 'APPROVED'}

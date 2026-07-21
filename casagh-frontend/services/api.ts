@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // ─── Property Images by Type ───────────────────────────────────────────────
@@ -38,6 +40,18 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
   } catch {
     return fallback;
   }
+}
+
+// ─── File Upload Helper: converts a local URI into a proper upload payload.
+// On web, fetch/FormData need a real Blob, not the {uri,name,type} shortcut
+// that only works with React Native's native fetch polyfill.
+async function toUploadFile(uri: string, name: string, type: string) {
+  if (Platform.OS === 'web') {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    return blob;
+  }
+  return { uri, name, type } as any;
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────
@@ -101,11 +115,14 @@ export async function uploadPropertyImage(propertyId: number, imageUri: string) 
   const filename = imageUri.split('/').pop() || 'photo.jpg';
   const match = /\.(\w+)$/.exec(filename);
   const fileType = match ? `image/${match[1]}` : 'image/jpeg';
-  formData.append('file', {
-    uri: imageUri,
-    name: filename,
-    type: fileType,
-  } as any);
+
+  const file = await toUploadFile(imageUri, filename, fileType);
+  if (Platform.OS === 'web') {
+    formData.append('file', file as Blob, filename);
+  } else {
+    formData.append('file', file as any);
+  }
+
   const res = await fetch(`${BASE_URL}/images/${propertyId}`, {
     method: 'POST',
     body: formData,
@@ -119,11 +136,13 @@ export async function uploadPropertyImage(propertyId: number, imageUri: string) 
 
 export async function uploadPropertyDocument(propertyId: number, document: any) {
   const formData = new FormData();
-  formData.append('file', {
-    uri: document.uri,
-    name: document.name,
-    type: document.mimeType || 'application/pdf',
-  } as any);
+  const file = await toUploadFile(document.uri, document.name, document.mimeType || 'application/pdf');
+  if (Platform.OS === 'web') {
+    formData.append('file', file as Blob, document.name);
+  } else {
+    formData.append('file', file as any);
+  }
+
   const res = await fetch(`${BASE_URL}/properties/${propertyId}/document`, {
     method: 'POST',
     body: formData,

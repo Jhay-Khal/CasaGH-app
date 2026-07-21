@@ -1,26 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, SafeAreaView, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
-import { getReceivedMessages } from '../../services/api';
+import { getReceivedMessages, getSentMessages } from '../../services/api';
 
 export default function Inbox() {
   const [messages, setMessages] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadMessages();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadMessages();
+    }, [])
+  );
 
   async function loadMessages() {
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      if (!userStr) return;
-      const user = JSON.parse(userStr);
-      const data = await getReceivedMessages(user.id);
-      setMessages(data);
+      const userIdStr = await AsyncStorage.getItem('userId');
+      if (!userIdStr) {
+        setLoading(false);
+        return;
+      }
+      const userId = parseInt(userIdStr, 10);
+      setCurrentUserId(userId);
+      const [received, sent] = await Promise.all([
+        getReceivedMessages(userId),
+        getSentMessages(userId),
+      ]);
+      const combined = [...received, ...sent].sort(
+        (a: any, b: any) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+      );
+      setMessages(combined);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -28,21 +41,31 @@ export default function Inbox() {
     }
   }
 
-  // Group messages by sender to show as conversations
+  // Group messages by the OTHER person in the conversation (whichever side you're not on)
   const conversations = messages.reduce((acc: any, msg: any) => {
-    const key = msg.senderId;
-    if (!acc[key]) {
-      acc[key] = {
-        id: msg.senderId,
-        name: msg.senderName || `User ${msg.senderId}`,
+    const isMine = msg.sender?.id === currentUserId;
+    const otherPerson = isMine ? msg.receiver : msg.sender;
+    const otherId = otherPerson?.id;
+    if (otherId == null) return acc;
+
+    const time = msg.sentAt
+      ? new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    if (!acc[otherId]) {
+      acc[otherId] = {
+        id: otherId,
+        name: otherPerson?.fullName || `User ${otherId}`,
         lastMessage: msg.content,
-        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unread: msg.isRead ? 0 : 1,
-        propertyId: msg.propertyId,
+        time,
+        unread: !isMine && !msg.isRead ? 1 : 0,
+        propertyId: msg.property?.id,
       };
     } else {
-      if (!msg.isRead) acc[key].unread += 1;
-      acc[key].lastMessage = msg.content;
+      if (!isMine && !msg.isRead) acc[otherId].unread += 1;
+      acc[otherId].lastMessage = msg.content;
+      acc[otherId].propertyId = msg.property?.id ?? acc[otherId].propertyId;
+      acc[otherId].time = time;
     }
     return acc;
   }, {});
@@ -67,7 +90,12 @@ export default function Inbox() {
             <Pressable
               key={chat.id}
               style={styles.chatRow}
-              onPress={() => router.push(`/chat/${chat.id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: `/chat/${chat.id}`,
+                  params: { propertyId: chat.propertyId, hostName: chat.name },
+                })
+              }
             >
               <View style={styles.avatarPlaceholder}>
                 <Text variant="h2" color={theme.colors.green700}>

@@ -46,7 +46,9 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
 
   const applyFilters = (list: any[]) =>
     list.filter((p) => {
-      if (filters.maxPrice && p.price > filters.maxPrice) return false;
+      // maxPrice at its default (5000) means "no limit" — only filter once the
+      // user has actually moved the slider below the max.
+      if (filters.maxPrice < 5000 && p.price > filters.maxPrice) return false;
       if (filters.roomType && p.roomType && String(p.roomType) !== filters.roomType) return false;
       if (filters.amenities.size > 0) {
         const propAmenities: string[] = p.amenities || [];

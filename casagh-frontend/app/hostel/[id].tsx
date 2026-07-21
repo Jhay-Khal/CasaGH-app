@@ -137,6 +137,22 @@ export default function HostelDetails() {
           <View style={styles.divider} />
 
           <Text variant="h2" style={{ marginBottom: 16 }}>Contact Host</Text>
+
+          {property.owner?.id && (
+            <Pressable
+              style={[styles.contactBtn, { backgroundColor: theme.colors.green700, marginBottom: 12 }]}
+              onPress={() =>
+                router.push({
+                  pathname: `/chat/${property.owner.id}`,
+                  params: { propertyId: property.id, hostName: property.owner.fullName || 'Host' },
+                })
+              }
+            >
+              <Ionicons name="chatbubble-ellipses" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text variant="h3" color="#fff">Message Host</Text>
+            </Pressable>
+          )}
+
           <View style={styles.contactRow}>
             <Pressable style={[styles.contactBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
               <Ionicons name="logo-whatsapp" size={20} color="#fff" style={{ marginRight: 8 }} />

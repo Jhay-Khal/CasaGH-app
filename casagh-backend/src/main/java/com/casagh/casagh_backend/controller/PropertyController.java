@@ -1,6 +1,8 @@
 package com.casagh.casagh_backend.controller;
 
 import com.casagh.casagh_backend.model.Property;
+import com.casagh.casagh_backend.model.User;
+import com.casagh.casagh_backend.repository.UserRepository;
 import com.casagh.casagh_backend.service.PropertyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,7 @@ import java.math.BigDecimal;
 public class PropertyController {
 
     private final PropertyService propertyService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<Page<Property>> getAllProperties(
@@ -64,6 +67,11 @@ public class PropertyController {
 
     @PostMapping
     public ResponseEntity<Property> createProperty(@RequestBody Property property) {
+        if (property.getOwnerId() != null) {
+            User owner = userRepository.findById(property.getOwnerId())
+                    .orElseThrow(() -> new RuntimeException("Owner not found"));
+            property.setOwner(owner);
+        }
         return ResponseEntity.ok(propertyService.createProperty(property));
     }
 
