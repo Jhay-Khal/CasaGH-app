@@ -13,7 +13,7 @@ export default function Onboarding() {
       {/* Hero Image */}
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: 'https://i.imgur.com/hqhZlda.jpeg' }}
+          source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=80' }}
           style={styles.image}
           resizeMode="cover"
         />
@@ -30,6 +30,24 @@ export default function Onboarding() {
             <Text style={styles.logoTagline}>Find Home. Find Peace.</Text>
           </View>
         </View>
+
+        {/* Stats row inside image */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>50+</Text>
+            <Text style={styles.statLabel}>Listings</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>10+</Text>
+            <Text style={styles.statLabel}>Cities</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>100%</Text>
+            <Text style={styles.statLabel}>Verified</Text>
+          </View>
+        </View>
       </View>
 
       {/* Content Card */}
@@ -39,21 +57,21 @@ export default function Onboarding() {
         <View style={styles.badgeRow}>
           <View style={styles.badge}>
             <Ionicons name="shield-checkmark" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
-            <Text style={styles.badgeText}>Verified</Text>
+            <Text style={styles.badgeText}>Verified Listings</Text>
           </View>
           <View style={styles.badge}>
             <Ionicons name="location" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
             <Text style={styles.badgeText}>Ghana Wide</Text>
           </View>
           <View style={styles.badge}>
-            <Ionicons name="star" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
+            <Ionicons name="star" size={11} color="#C9A84C" style={{ marginRight: 4 }} />
             <Text style={styles.badgeText}>Trusted</Text>
           </View>
         </View>
 
         <Text style={styles.heading}>Find your perfect{'\n'}home in Ghana</Text>
         <Text style={styles.subtext}>
-          Browse verified apartments, hostels, and houses across Ghana. Safe, simple, and smart.
+          Browse verified apartments, hostels, and houses. Safe, simple, and smart.
         </Text>
 
         {/* Get Started Button */}
@@ -75,6 +93,13 @@ export default function Onboarding() {
           <Text style={styles.ghostButtonText}>Browse as guest</Text>
         </TouchableOpacity>
 
+        <Text style={styles.termsText}>
+          By continuing you agree to our{' '}
+          <Text style={styles.termsLink}>Terms</Text>
+          {' '}and{' '}
+          <Text style={styles.termsLink}>Privacy Policy</Text>
+        </Text>
+
       </View>
     </SafeAreaView>
   );
@@ -95,15 +120,15 @@ const styles = StyleSheet.create({
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 27, 75, 0.35)',
+    backgroundColor: 'rgba(13, 27, 75, 0.3)',
   },
   overlayBottom: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 120,
-    backgroundColor: 'rgba(13, 27, 75, 0.6)',
+    height: 140,
+    backgroundColor: 'rgba(13, 27, 75, 0.75)',
   },
   logoContainer: {
     position: 'absolute',
@@ -135,6 +160,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 1,
   },
+  statsRow: {
+    position: 'absolute',
+    bottom: 28,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#3AAFA9',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
   content: {
     flex: 1,
     backgroundColor: '#fff',
@@ -142,9 +201,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     padding: 28,
     paddingTop: 24,
-    paddingBottom: 48,
+    paddingBottom: 32,
     justifyContent: 'center',
-    gap: 16,
+    gap: 14,
     marginTop: -24,
   },
   badgeRow: {
@@ -168,10 +227,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   heading: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#0D1B4B',
-    lineHeight: 36,
+    lineHeight: 38,
   },
   subtext: {
     fontSize: 14,
@@ -189,6 +248,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 5,
+    marginTop: 4,
   },
   primaryButtonText: {
     color: '#fff',
@@ -206,6 +266,15 @@ const styles = StyleSheet.create({
   ghostButtonText: {
     color: '#C9A84C',
     fontSize: 15,
+    fontWeight: '600',
+  },
+  termsText: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  termsLink: {
+    color: '#3AAFA9',
     fontWeight: '600',
   },
 });
