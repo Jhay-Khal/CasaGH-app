@@ -6,7 +6,15 @@ import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
-import { getPropertyById } from '../../services/api';
+import { getPropertyById, getPropertyImages } from '../../services/api';
+
+const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api').replace('/api', '');
+
+function resolveImageUrl(url?: string): string {
+  if (!url) return 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5';
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return url;
+}
 
 export default function HostelDetails() {
   const { id } = useLocalSearchParams();
@@ -20,7 +28,8 @@ export default function HostelDetails() {
   async function loadProperty() {
     try {
       const data = await getPropertyById(Number(id));
-      setProperty(data);
+      const images = await getPropertyImages(Number(id));
+      setProperty({ ...data, images });
     } catch (error) {
       console.error('Failed to load property:', error);
       Alert.alert('Error', 'Could not load property details');
@@ -70,112 +79,107 @@ export default function HostelDetails() {
     );
   }
 
-  const imageUrl = property.images?.[0]?.imageUrl
-    || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5';
+  const imageUrl = resolveImageUrl(property.images?.[0]?.imageUrl);
   const isVerified = property.verificationStatus === 'APPROVED';
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color={theme.colors.green700} style={{ marginTop: 60 }} />
-      ) : (
       <>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.imageWrap}>
-          <Image source={{ uri: imageUrl }} style={styles.image} />
-          <Pressable style={styles.glassBackBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.ink} />
-          </Pressable>
-          <Pressable style={styles.glassFavBtn}>
-            <Ionicons name="heart-outline" size={24} color={theme.colors.ink} />
-          </Pressable>
-        </View>
-
-        <View style={styles.details}>
-          <View style={styles.titleRow}>
-            <Text variant="h1">{property.title}</Text>
-            {isVerified && <Badge label="Verified" kind="success" />}
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.imageWrap}>
+            <Image source={{ uri: imageUrl }} style={styles.image} />
+            <Pressable style={styles.glassBackBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={theme.colors.ink} />
+            </Pressable>
+            <Pressable style={styles.glassFavBtn}>
+              <Ionicons name="heart-outline" size={24} color={theme.colors.ink} />
+            </Pressable>
           </View>
 
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={16} color={theme.colors.inkSoft} style={{ marginRight: 6 }} />
-            <Text variant="bodyMd" color={theme.colors.inkSoft}>
-              {property.area}, {property.city}
+          <View style={styles.details}>
+            <View style={styles.titleRow}>
+              <Text variant="h1">{property.title}</Text>
+              {isVerified && <Badge label="Verified" kind="success" />}
+            </View>
+
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={16} color={theme.colors.inkSoft} style={{ marginRight: 6 }} />
+              <Text variant="bodyMd" color={theme.colors.inkSoft}>
+                {property.area}, {property.city}
+              </Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <Text variant="h2" style={{ marginBottom: 12 }}>About this stay</Text>
+            <Text variant="bodyLg" color={theme.colors.ink} style={{ lineHeight: 26 }}>
+              {property.description || 'No description available.'}
+            </Text>
+
+            <View style={styles.divider} />
+
+            <Text variant="h2" style={{ marginBottom: 16 }}>Property Details</Text>
+            <View style={styles.amenityRow}>
+              <View style={styles.amenityItem}>
+                <Ionicons name="home" size={20} color={theme.colors.green700} />
+                <Text variant="bodyMd">Type: {property.type}</Text>
+              </View>
+              <View style={styles.amenityItem}>
+                <Ionicons name="location" size={20} color={theme.colors.green700} />
+                <Text variant="bodyMd">Region: {property.region}</Text>
+              </View>
+              <View style={styles.amenityItem}>
+                <Ionicons name="swap-horizontal" size={20} color={theme.colors.green700} />
+                <Text variant="bodyMd">{property.isForRent ? 'Available for Rent' : 'For Sale'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <Button variant="secondary" label="View Photo Gallery" onPress={() => router.push(`/hostel/gallery/${id}`)} leftIcon={<Ionicons name="images-outline" size={20} color={theme.colors.green700} />} style={{ marginBottom: 12 }} />
+            <Button variant="secondary" label="Read Reviews" onPress={() => router.push(`/hostel/reviews/${id}`)} leftIcon={<Ionicons name="star-outline" size={20} color={theme.colors.green700} />} />
+
+            <View style={styles.divider} />
+
+            <Text variant="h2" style={{ marginBottom: 16 }}>Contact Host</Text>
+
+            {property.owner?.id && (
+              <Pressable
+                style={[styles.contactBtn, { backgroundColor: theme.colors.green700, marginBottom: 12 }]}
+                onPress={() =>
+                  router.push({
+                    pathname: `/chat/${property.owner.id}`,
+                    params: { propertyId: property.id, hostName: property.owner.fullName || 'Host' },
+                  })
+                }
+              >
+                <Ionicons name="chatbubble-ellipses" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text variant="h3" color="#fff">Message Host</Text>
+              </Pressable>
+            )}
+
+            <View style={styles.contactRow}>
+              <Pressable style={[styles.contactBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
+                <Ionicons name="logo-whatsapp" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text variant="h3" color="#fff">WhatsApp</Text>
+              </Pressable>
+              <Pressable style={[styles.contactBtn, { backgroundColor: '#007AFF' }]} onPress={handleCall}>
+                <Ionicons name="call" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text variant="h3" color="#fff">Call</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View>
+            <Text variant="h2" color={theme.colors.green700}>
+              Starting from ₵{property.price}
             </Text>
           </View>
-
-          <View style={styles.divider} />
-
-          <Text variant="h2" style={{ marginBottom: 12 }}>About this stay</Text>
-          <Text variant="bodyLg" color={theme.colors.ink} style={{ lineHeight: 26 }}>
-            {property.description || 'No description available.'}
-          </Text>
-
-          <View style={styles.divider} />
-
-          <Text variant="h2" style={{ marginBottom: 16 }}>Property Details</Text>
-          <View style={styles.amenityRow}>
-            <View style={styles.amenityItem}>
-              <Ionicons name="home" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">Type: {property.type}</Text>
-            </View>
-            <View style={styles.amenityItem}>
-              <Ionicons name="location" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">Region: {property.region}</Text>
-            </View>
-            <View style={styles.amenityItem}>
-              <Ionicons name="swap-horizontal" size={20} color={theme.colors.green700} />
-              <Text variant="bodyMd">{property.isForRent ? 'Available for Rent' : 'For Sale'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <Button variant="secondary" label="View Photo Gallery" onPress={() => router.push(`/hostel/gallery/${id}`)} leftIcon={<Ionicons name="images-outline" size={20} color={theme.colors.green700} />} style={{ marginBottom: 12 }} />
-          <Button variant="secondary" label="Read Reviews" onPress={() => router.push(`/hostel/reviews/${id}`)} leftIcon={<Ionicons name="star-outline" size={20} color={theme.colors.green700} />} />
-
-          <View style={styles.divider} />
-
-          <Text variant="h2" style={{ marginBottom: 16 }}>Contact Host</Text>
-
-          {property.owner?.id && (
-            <Pressable
-              style={[styles.contactBtn, { backgroundColor: theme.colors.green700, marginBottom: 12 }]}
-              onPress={() =>
-                router.push({
-                  pathname: `/chat/${property.owner.id}`,
-                  params: { propertyId: property.id, hostName: property.owner.fullName || 'Host' },
-                })
-              }
-            >
-              <Ionicons name="chatbubble-ellipses" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text variant="h3" color="#fff">Message Host</Text>
-            </Pressable>
-          )}
-
-          <View style={styles.contactRow}>
-            <Pressable style={[styles.contactBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
-              <Ionicons name="logo-whatsapp" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text variant="h3" color="#fff">WhatsApp</Text>
-            </Pressable>
-            <Pressable style={[styles.contactBtn, { backgroundColor: '#007AFF' }]} onPress={handleCall}>
-              <Ionicons name="call" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text variant="h3" color="#fff">Call</Text>
-            </Pressable>
-          </View>
+          <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} disabled={loading} />
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <View>
-          <Text variant="h2" color={theme.colors.green700}>
-            Starting from ₵{property.price}
-          </Text>
-        </View>
-        <Button label="Select Room" onPress={() => router.push(`/hostel/room/${id}`)} fullWidth={false} style={{ minWidth: 140 }} disabled={loading} />
-      </View>
       </>
-      )}
     </View>
   );
 }
@@ -212,6 +216,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: theme.spacing.sp4, backgroundColor: theme.colors.white,
     borderTopWidth: 1, borderTopColor: theme.colors.line,
-    paddingBottom: 32
-  }
+    paddingBottom: 32,
+  },
 });

@@ -8,11 +8,12 @@ import { Text } from '../../components/Text';
 import { Chip } from '../../components/Chip';
 import { ListingCard } from '../../components/ListingCard';
 import { Input } from '../../components/Input';
-import { getProperties, getPropertyImage, getSavedProperties, saveProperty, unsaveProperty } from '../../services/api';
+import { getProperties, getPropertyImage, getPropertyImages, getSavedProperties, saveProperty, unsaveProperty } from '../../services/api';
 import { useFilters } from '../../context/FilterContext';
 
 export default function Explore() {
   const [properties, setProperties] = useState([]);
+  const [propertyImages, setPropertyImages] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [isOwner, setIsOwner] = useState(false);
@@ -36,6 +37,16 @@ export default function Explore() {
       const data = await getProperties();
       setProperties(data);
       setContextProperties(data);
+
+      // Fetch real images for every property in parallel
+      const imageMap: Record<number, string> = {};
+      await Promise.all(
+        data.map(async (p: any) => {
+          const images = await getPropertyImages(p.id);
+          imageMap[p.id] = getPropertyImage(p.type, p.id, images);
+        })
+      );
+      setPropertyImages(imageMap);
     } catch (error) {
       console.error('Failed to load properties:', error);
     } finally {
@@ -207,7 +218,7 @@ export default function Explore() {
             filtered.map((property: any) => (
               <ListingCard
                 key={property.id}
-                imageUrl={getPropertyImage(property.type, property.id)}
+                imageUrl={propertyImages[property.id] || getPropertyImage(property.type, property.id)}
                 name={property.title}
                 location={`${property.area}, ${property.city}`}
                 pricePerNight={property.price}

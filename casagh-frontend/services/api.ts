@@ -15,7 +15,7 @@ function getBaseUrl() {
 }
 
 const BASE_URL = getBaseUrl();
-
+const API_BASE = BASE_URL.replace('/api', '');
 // ─── Property Images by Type ───────────────────────────────────────────────
 const PROPERTY_IMAGES: Record<string, string[]> = {
   HOSTEL: [
@@ -37,7 +37,11 @@ const PROPERTY_IMAGES: Record<string, string[]> = {
 
 export function getPropertyImage(type: string, id: number, images?: any[]): string {
   if (images && images.length > 0 && images[0]?.imageUrl) {
-    return images[0].imageUrl;
+    const url = images[0].imageUrl;
+    if (url.startsWith('/')) {
+      return `${API_BASE}${url}`;
+    }
+    return url;
   }
   const placeholders = PROPERTY_IMAGES[type] || PROPERTY_IMAGES['HOSTEL'];
   return placeholders[id % placeholders.length];
@@ -56,9 +60,7 @@ async function extractErrorMessage(res: Response, fallback: string): Promise<str
   }
 }
 
-// ─── File Upload Helper: converts a local URI into a proper upload payload.
-// On web, fetch/FormData need a real Blob, not the {uri,name,type} shortcut
-// that only works with React Native's native fetch polyfill.
+// ─── File Upload Helper ────────────────────────────────────────────────────
 async function toUploadFile(uri: string, name: string, type: string) {
   if (Platform.OS === 'web') {
     const res = await fetch(uri);
@@ -80,6 +82,17 @@ export async function getPropertyById(id: number) {
   const res = await fetch(`${BASE_URL}/properties/${id}`);
   if (!res.ok) throw new Error('Failed to fetch property');
   return res.json();
+}
+
+export async function getPropertyImages(propertyId: number) {
+  try {
+    const res = await fetch(`${BASE_URL}/images/${propertyId}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getPropertiesByCity(city: string) {
@@ -355,7 +368,6 @@ export async function getUserBookings(userId: number) {
   return res.json();
 }
 
-// ─── FIXED: now sends email to Paystack ───────────────────────────────────
 export async function initiatePayment(bookingId: number, email: string) {
   const res = await fetch(`${BASE_URL}/bookings/${bookingId}/pay`, {
     method: 'POST',
