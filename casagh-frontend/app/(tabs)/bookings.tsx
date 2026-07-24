@@ -6,7 +6,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Badge } from '../../components/Badge';
-import { getUserBookings, getPropertyImage } from '../../services/api';
+import { getUserBookings, getPropertyImage, getPropertyImages } from '../../services/api';
+
+const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api').replace('/api', '');
+
+function resolveImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return url;
+}
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
@@ -15,6 +23,7 @@ function formatDate(dateStr: string): string {
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<any[]>([]);
+  const [imageMap, setImageMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +39,19 @@ export default function Bookings() {
       }
       const data = await getUserBookings(parseInt(userIdStr, 10));
       setBookings(data);
+
+      // Fetch real images for each booked property
+      const map: Record<number, string> = {};
+      await Promise.all(
+        data.map(async (booking: any) => {
+          const property = booking.property;
+          if (!property) return;
+          const images = await getPropertyImages(property.id);
+          const resolved = resolveImageUrl(images?.[0]?.imageUrl);
+          map[property.id] = resolved || getPropertyImage(property.type, property.id);
+        })
+      );
+      setImageMap(map);
     } catch (error) {
       console.error('Failed to load bookings:', error);
     } finally {
@@ -46,7 +68,9 @@ export default function Bookings() {
     const isConfirmed = booking.status === 'CONFIRMED';
     const isPast = new Date(booking.checkOutDate) < today;
     const property = booking.property;
-    const imageUrl = property ? getPropertyImage(property.type, property.id) : null;
+    const imageUrl = property
+      ? imageMap[property.id] || getPropertyImage(property.type, property.id)
+      : null;
 
     return (
       <Pressable
@@ -121,7 +145,6 @@ export default function Bookings() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
 
-          {/* Header */}
           <View style={styles.header}>
             <View>
               <Text variant="display" color={theme.colors.navy}>My Bookings</Text>

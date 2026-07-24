@@ -168,8 +168,17 @@ export default function Profile() {
               label="Personal Information"
               onPress={() => router.push('/profile/edit')}
             />
-            <MenuRow icon="card-outline" label="Payment Methods" />
-            <MenuRow icon="notifications-outline" label="Notifications" isLast />
+            <MenuRow
+              icon="card-outline"
+              label="Payment History"
+              onPress={() => router.push('/(tabs)/bookings')}
+            />
+            <MenuRow
+              icon="notifications-outline"
+              label="Notifications"
+              onPress={() => router.push('/notifications')}
+              isLast
+            />
           </View>
 
           {/* Session Section */}
