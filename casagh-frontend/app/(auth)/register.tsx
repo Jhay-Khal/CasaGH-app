@@ -1,85 +1,273 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
+
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { register } from '../../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Register() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'USER' | 'OWNER'>('USER');
-  const [loading, setLoading] = useState(false);
+ const [name, setName] = useState('');
+const [email, setEmail] = useState('');
+const [phone, setPhone] = useState('');
 
+const [password, setPassword] = useState('');
+const [confirmPassword, setConfirmPassword] = useState('');
+
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+const [role, setRole] =
+  useState<'USER' | 'OWNER'>('USER');
+
+const [loading, setLoading] = useState(false);
+
+const [errors, setErrors] = useState({
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+});
+const emailRegex =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const passwordStrength = () => {
+  if (password.length < 6)
+    return {
+      text: 'Weak',
+      color: '#E53935',
+    };
+
+  if (
+    /[A-Z]/.test(password) &&
+    /\d/.test(password)
+  )
+    return {
+      text: 'Strong',
+      color: '#2E7D32',
+    };
+
+  return {
+    text: 'Medium',
+    color: '#FB8C00',
+  };
+};
   async function handleRegister() {
-    if (!name || !email || !password || !phone) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-    if (phone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await register(name, email, password, phone, role);
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('userId', String(response.id));
-      await AsyncStorage.setItem('userEmail', response.email);
-      await AsyncStorage.setItem('userRole', response.role);
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('Registration Failed', error?.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+
+  const newErrors = {
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  };
+
+  if (!name.trim())
+    newErrors.name = 'Enter your full name';
+
+  if (!emailRegex.test(email))
+    newErrors.email = 'Enter a valid email';
+
+  if (phone.length < 10)
+    newErrors.phone = 'Invalid phone number';
+
+  if (password.length < 8)
+    newErrors.password =
+      'Minimum of 8 characters';
+
+  if (password !== confirmPassword)
+    newErrors.confirmPassword =
+      'Passwords do not match';
+
+  setErrors(newErrors);
+
+  if (Object.values(newErrors).some(Boolean))
+    return;
+
+  setLoading(true);
+
+  try {
+
+    const response = await register(
+      name,
+      email,
+      password,
+      phone,
+      role
+    );
+
+    await AsyncStorage.setItem(
+      'token',
+      response.token
+    );
+
+    await AsyncStorage.setItem(
+      'userId',
+      String(response.id)
+    );
+
+    await AsyncStorage.setItem(
+      'userEmail',
+      response.email
+    );
+
+    await AsyncStorage.setItem(
+      'userRole',
+      response.role
+    );
+
+    Alert.alert(
+      'Success',
+      'Account created successfully!'
+    );
+
+    router.replace('/(tabs)');
+
+  } catch (error: any) {
+
+    Alert.alert(
+      'Registration Failed',
+      error?.message ??
+        'Something went wrong.'
+    );
+
+  } finally {
+
+    setLoading(false);
+
   }
+
+}
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text variant="h1" style={{ marginBottom: 8 }}>Create an account</Text>
-          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32 }}>
+          <Pressable
+          onPress={() => router.back()}
+          style={{
+         marginBottom: 20,
+         alignSelf: "flex-start",
+         }}
+        >
+  <Ionicons
+    name="arrow-back"
+    size={28}
+    color={theme.colors.green700}
+  />
+</Pressable>
+          
+          <Text
+         variant="h1"
+         style={{
+         marginBottom: 8,
+         textAlign: "center",
+         }}
+         >
+         Create an account
+         </Text>
+          <View
+          style={{
+         width: 90,
+         height: 90,
+         borderRadius: 45,
+         backgroundColor: "#E8F5F4",
+         justifyContent: "center",
+         alignItems: "center",
+         alignSelf: "center",
+         marginBottom: 24,
+         }}
+         >
+         <Ionicons
+          name="home"
+          size={48}
+         color={theme.colors.green700}
+          />
+         </View>
+          <Text
+         variant="bodyMd"
+          color={theme.colors.inkSoft}
+         style={{
+         marginBottom: 32,
+         textAlign: "center",
+         }}
+         >   
             Join CasaGH to find your perfect property
           </Text>
-          <Input 
-            label="Full Name" 
-            placeholder="Your full name" 
-            value={name}
-            onChangeText={setName}
+          <Input
+          label="Full Name"
+          placeholder="Your full name"
+         value={name}
+         onChangeText={setName}
+         error={errors.name}
           />
           <Input 
-            label="Email" 
-            placeholder="your@email.com" 
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+             label="Email"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={errors.email}
+              />
           <Input
             label="Phone Number"
             placeholder="024XXXXXXX"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
+           value={phone}
+           onChangeText={setPhone}
+           keyboardType="phone-pad"
+           error={errors.phone}
+           /> 
           <Input 
-            label="Password" 
-            placeholder="••••••••" 
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          label="Password"
+          placeholder="••••••••"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          error={errors.password}
+         rightIcon={showPassword ? "eye-off" : "eye"}
+         onRightIconPress={() => setShowPassword(!showPassword)}
+         />
+
+          <Text
+         variant="bodyMd"
+         style={{
+         color: passwordStrength().color,
+         marginBottom: 16,
+         fontFamily: theme.fontFamily.bodySemiBold,
+         }}
+         >
+         Password Strength: {passwordStrength().text}
+         </Text>
+
+         <Input
+          label="Confirm Password"
+         placeholder="Re-enter your password"
+         value={confirmPassword}
+         onChangeText={setConfirmPassword}
+         secureTextEntry={!showConfirmPassword}
+          error={errors.confirmPassword}
+         rightIcon={showConfirmPassword ? "eye-off" : "eye"}
+         onRightIconPress={() =>
+         setShowConfirmPassword(!showConfirmPassword)
+         }
+        />
 
           <Text variant="bodyMd" style={{ marginTop: 16, marginBottom: 8, fontFamily: theme.fontFamily.bodySemiBold }}>
             I want to
@@ -111,12 +299,33 @@ export default function Register() {
             </Pressable>
           </View>
 
-          <Button 
-            label={loading ? "Creating account..." : "Sign Up"}
-            onPress={handleRegister}
-            style={{ marginTop: 24, marginBottom: 16 }}
-            disabled={loading}
-          />
+           
+         {loading ? (
+  <View
+    style={{
+      marginTop: 28,
+      marginBottom: 18,
+      backgroundColor: "#3AAFA9",
+      borderRadius: 14,
+      height: 54,
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <ActivityIndicator color="#fff" />
+  </View>
+) : (
+  <Button
+    label="Create Account"
+    onPress={handleRegister}
+    style={{
+      marginTop: 28,
+      marginBottom: 18,
+      backgroundColor: "#3AAFA9",
+      borderRadius: 14,
+    }}
+  />
+)}
           <View style={styles.footerRow}>
             <Text variant="bodyMd" color={theme.colors.inkSoft}>Already have an account? </Text>
             <Text 
