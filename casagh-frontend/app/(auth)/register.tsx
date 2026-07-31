@@ -21,6 +21,11 @@ export default function Register() {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return;
@@ -31,7 +36,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const response = await register(name, email, password, phone, role);
+      const response = await register(name, email.trim(), password, phone, role);
       await AsyncStorage.setItem('token', response.token);
       await AsyncStorage.setItem('userId', String(response.id));
       await AsyncStorage.setItem('userEmail', response.email);
