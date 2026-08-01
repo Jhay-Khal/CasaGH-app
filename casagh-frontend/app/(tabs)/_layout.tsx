@@ -1,9 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 import { theme } from '../../theme';
+import { getUnreadMessageCount } from '../../services/api';
 
 export default function TabLayout() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const userIdStr = await AsyncStorage.getItem('userId');
+      if (!userIdStr) return;
+      const userId = parseInt(userIdStr, 10);
+      const count = await getUnreadMessageCount(userId);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to load unread count:', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadCount();
+      const interval = setInterval(loadUnreadCount, 15000); // refresh every 15s
+      return () => clearInterval(interval);
+    }, [loadUnreadCount])
+  );
+
   return (
     <Tabs screenOptions={{
       tabBarActiveTintColor: theme.colors.green700,
@@ -47,7 +72,8 @@ export default function TabLayout() {
           title: 'Inbox',
           tabBarLabel: 'Inbox',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }} 
       />
       <Tabs.Screen 

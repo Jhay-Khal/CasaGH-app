@@ -296,6 +296,15 @@ export async function markConversationAsRead(receiverId: number, senderId: numbe
   if (!res.ok) throw new Error('Failed to mark messages as read');
 }
 
+export async function getUnreadMessageCount(userId: number): Promise<number> {
+  try {
+    const received = await getReceivedMessages(userId);
+    return received.filter((m: any) => !m.isRead).length;
+  } catch {
+    return 0;
+  }
+}
+
 // ─── Reviews ──────────────────────────────────────────────────────────────
 export async function addReview(
   userId: number,
