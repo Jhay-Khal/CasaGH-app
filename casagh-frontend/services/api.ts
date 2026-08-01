@@ -289,6 +289,13 @@ export async function getSentMessages(userId: number) {
   return res.json();
 }
 
+export async function markConversationAsRead(receiverId: number, senderId: number) {
+  const res = await fetch(`${BASE_URL}/messages/read/${receiverId}/${senderId}`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Failed to mark messages as read');
+}
+
 // ─── Reviews ──────────────────────────────────────────────────────────────
 export async function addReview(
   userId: number,

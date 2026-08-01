@@ -7,7 +7,6 @@ import {
   Platform,
   ScrollView,
   Pressable,
-  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,8 +15,11 @@ import { theme } from "../../theme";
 import { Text } from "../../components/Text";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
+import { useAppAlert } from "../context/AppAlertContext";
 
 export default function ForgotPassword() {
+  const { showAlert } = useAppAlert();
+
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,10 +27,7 @@ export default function ForgotPassword() {
 
   async function handleResetPassword() {
     if (!emailRegex.test(email)) {
-      Alert.alert(
-        "Invalid Email",
-        "Please enter a valid email address."
-      );
+      showAlert("Invalid Email", "Please enter a valid email address.");
       return;
     }
 
@@ -38,12 +37,13 @@ export default function ForgotPassword() {
     setTimeout(() => {
       setLoading(false);
 
-      Alert.alert(
+      showAlert(
         "Reset Link Sent",
-        "If an account exists with this email, a password reset link has been sent."
+        "If an account exists with this email, a password reset link has been sent.",
+        () => {
+          router.back();
+        }
       );
-
-      router.back();
     }, 1800);
   }
 

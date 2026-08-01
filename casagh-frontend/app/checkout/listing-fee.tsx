@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { initiateListingPayment, verifyListingPayment } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function ListingFee() {
-  const { propertyId, propertyTitle, email } = useLocalSearchParams<{
+  const { propertyId, propertyTitle } = useLocalSearchParams<{
     propertyId: string;
     propertyTitle: string;
-    email: string;
   }>();
+
+  const { showAlert } = useAppAlert();
 
   const [processing, setProcessing] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -21,6 +24,13 @@ export default function ListingFee() {
   async function handlePay() {
     setProcessing(true);
     try {
+      const email = await AsyncStorage.getItem('userEmail');
+      if (!email) {
+        showAlert('Error', 'We could not find your account email. Please log out and log back in.');
+        setProcessing(false);
+        return;
+      }
+
       const payment = await initiateListingPayment(Number(propertyId), email);
       setReference(payment.reference);
       const canOpen = await Linking.canOpenURL(payment.authorizationUrl);
@@ -30,11 +40,12 @@ export default function ListingFee() {
       setPaid(true);
     } catch (error: any) {
       if (error?.message?.includes('already')) {
-        window.alert('✅ Your listing fee was already paid! Property is pending admin review.');
-        router.replace('/(tabs)');
+        showAlert('Already Paid', 'Your listing fee was already paid! Property is pending admin review.', () => {
+          router.replace('/(tabs)');
+        });
         return;
       }
-      window.alert('Payment failed: ' + (error?.message || 'Something went wrong.'));
+      showAlert('Payment Failed', error?.message || 'Something went wrong.');
     } finally {
       setProcessing(false);
     }
@@ -46,11 +57,13 @@ export default function ListingFee() {
       if (reference) {
         await verifyListingPayment(reference);
       }
-      window.alert('✅ Payment confirmed! Your property is pending admin review and will go live once approved.');
-      router.replace('/(tabs)');
+      showAlert('Payment Confirmed', 'Your property is pending admin review and will go live once approved.', () => {
+        router.replace('/(tabs)');
+      });
     } catch (error: any) {
-      window.alert('✅ Your listing fee was received! Your property is pending admin review.');
-      router.replace('/(tabs)');
+      showAlert('Payment Received', 'Your listing fee was received! Your property is pending admin review.', () => {
+        router.replace('/(tabs)');
+      });
     } finally {
       setProcessing(false);
     }

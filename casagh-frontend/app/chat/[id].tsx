@@ -1,15 +1,18 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView, Pressable, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
-import { sendMessage, getSentMessages, getReceivedMessages } from '../../services/api';
+import { sendMessage, getSentMessages, getReceivedMessages, markConversationAsRead } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function ChatScreen() {
   const { id, propertyId, hostName: hostNameParam } = useLocalSearchParams<{ id: string; propertyId?: string; hostName?: string }>();
   const otherUserId = Number(id);
+
+  const { showAlert } = useAppAlert();
 
   const [userId, setUserId] = useState<number | null>(null);
   const [message, setMessage] = useState('');
@@ -33,6 +36,12 @@ export default function ChatScreen() {
       const uid = parseInt(userIdStr, 10);
       setUserId(uid);
       await fetchConversation(uid);
+
+      try {
+        await markConversationAsRead(uid, otherUserId);
+      } catch (error) {
+        console.error('Failed to mark messages as read:', error);
+      }
     } catch (error) {
       console.error('Failed to load chat:', error);
       setLoading(false);
@@ -70,7 +79,7 @@ export default function ChatScreen() {
     if (!message.trim() || !userId || sending) return;
     const pid = resolvePropertyId();
     if (!pid) {
-      Alert.alert('Cannot send', "This conversation isn't linked to a property yet.");
+      showAlert('Cannot send', "This conversation isn't linked to a property yet.");
       return;
     }
     try {
@@ -80,7 +89,7 @@ export default function ChatScreen() {
       setMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      showAlert('Error', 'Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }

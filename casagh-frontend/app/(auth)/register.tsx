@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
@@ -20,8 +19,11 @@ import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { register } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function Register() {
+  const { showAlert } = useAppAlert();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -81,10 +83,11 @@ export default function Register() {
       await AsyncStorage.setItem('userEmail', response.email);
       await AsyncStorage.setItem('userRole', response.role);
 
-      Alert.alert('Success', 'Account created successfully!');
-      router.replace('/(tabs)');
+      showAlert('Success', 'Account created successfully!', () => {
+        router.replace('/(tabs)');
+      });
     } catch (error: any) {
-      Alert.alert('Registration Failed', error?.message ?? 'Something went wrong.');
+      showAlert('Registration Failed', error?.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }

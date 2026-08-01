@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
+import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
@@ -8,105 +8,70 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { login } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function Login() {
+  const { showAlert } = useAppAlert();
+
   const [email, setEmail] = useState('');
-const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('');
 
-const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-const [errors, setErrors] = useState({
-  email: '',
-  password: '',
-});
-
-const emailRegex =
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  async function handleLogin() {
-
-  const newErrors = {
+  const [errors, setErrors] = useState({
     email: '',
     password: '',
-  };
+  });
 
-  if (!emailRegex.test(email))
-    newErrors.email = 'Enter a valid email';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (password.length < 6)
-    newErrors.password =
-      'Password must be at least 6 characters';
+  async function handleLogin() {
+    const newErrors = {
+      email: '',
+      password: '',
+    };
 
-  setErrors(newErrors);
+    if (!emailRegex.test(email)) newErrors.email = 'Enter a valid email';
+    if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
 
-  if (Object.values(newErrors).some(Boolean))
-    return;
+    setErrors(newErrors);
 
-  setLoading(true);
+    if (Object.values(newErrors).some(Boolean)) return;
 
-  try {
+    setLoading(true);
 
-    const response = await login(
-      email,
-      password
-    );
+    try {
+      const response = await login(email, password);
 
-    await AsyncStorage.setItem(
-      'token',
-      response.token
-    );
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('userId', String(response.id));
+      await AsyncStorage.setItem('userEmail', response.email);
+      await AsyncStorage.setItem('userRole', response.role);
 
-    await AsyncStorage.setItem(
-      'userId',
-      String(response.id)
-    );
+      await AsyncStorage.setItem(
+        'user',
+        JSON.stringify({
+          id: response.id,
+          email: response.email,
+          fullName: response.fullName,
+          role: response.role,
+          phone: response.phone,
+        })
+      );
 
-    await AsyncStorage.setItem(
-      'userEmail',
-      response.email
-    );
-
-    await AsyncStorage.setItem(
-      'userRole',
-      response.role
-    );
-
-    await AsyncStorage.setItem(
-      'user',
-      JSON.stringify({
-        id: response.id,
-        email: response.email,
-        fullName: response.fullName,
-        role: response.role,
-        phone: response.phone,
-      })
-    );
-
-    Alert.alert(
-      'Welcome Back!',
-      'Login successful.'
-    );
-
-    router.replace('/(tabs)');
-
-  } catch {
-
-    Alert.alert(
-      'Login Failed',
-      'Invalid email or password.'
-    );
-
-  } finally {
-
-    setLoading(false);
-
+      showAlert('Welcome Back!', 'Login successful.', () => {
+        router.replace('/(tabs)');
+      });
+    } catch {
+      showAlert('Login Failed', 'Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
   }
-
-}
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,16 +88,16 @@ const emailRegex =
           </View>
 
           <Text
-         variant="h1"
-         color="#0D1B4B"
-         style={{
-         marginBottom: 8,
-          textAlign: "center",
-         }}
-         >
-         Welcome Back
+            variant="h1"
+            color="#0D1B4B"
+            style={{
+              marginBottom: 8,
+              textAlign: 'center',
+            }}
+          >
+            Welcome Back
           </Text>
-          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32, textAlign: "center" }} >
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32, textAlign: 'center' }}>
             Sign in to continue to CasaGH
           </Text>
 
@@ -146,50 +111,45 @@ const emailRegex =
             error={errors.email}
           />
           <Input
-          label="Password"
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
-          error={errors.password}
-          rightIcon={showPassword ? "eye-off" : "eye"}
-          onRightIconPress={() =>
-         setShowPassword(!showPassword)
-         }
-         />
-         <View
-           style={{
-           alignItems: "flex-end",
-           marginBottom: 18,
-           }}
-           >
-           <Pressable
-           onPress={() => {
-           console.log("Forgot Password pressed");
-           router.push("/forget-password");
+            label="Password"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            error={errors.password}
+            rightIcon={showPassword ? 'eye-off' : 'eye'}
+            onRightIconPress={() => setShowPassword(!showPassword)}
+          />
+          <View
+            style={{
+              alignItems: 'flex-end',
+              marginBottom: 18,
             }}
-           >
-           <Text
-            color="#3AAFA9"
-           style={{
-           fontFamily: theme.fontFamily.bodySemiBold,
-           }}
+          >
+            <Pressable
+              onPress={() => {
+                router.push('/forget-password');
+              }}
             >
-           Forgot Password?
-           </Text>
-           </Pressable>
-
- 
-           </View>
+              <Text
+                color="#3AAFA9"
+                style={{
+                  fontFamily: theme.fontFamily.bodySemiBold,
+                }}
+              >
+                Forgot Password?
+              </Text>
+            </Pressable>
+          </View>
           <Button
-           label={loading ? 'Signing In...' : 'Sign In'}
-           onPress={handleLogin}
-           disabled={loading}
-           style={{
-           marginTop: 24,
-           marginBottom: 16,
-           backgroundColor: '#3AAFA9',
-           }}
+            label={loading ? 'Signing In...' : 'Sign In'}
+            onPress={handleLogin}
+            disabled={loading}
+            style={{
+              marginTop: 24,
+              marginBottom: 16,
+              backgroundColor: '#3AAFA9',
+            }}
           />
 
           <View style={styles.footerRow}>

@@ -9,8 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { getPendingProperties, approveProperty, rejectProperty } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function AdminDashboard() {
+  const { showAlert, showConfirm } = useAppAlert();
+
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -43,28 +46,39 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleApprove(id: number, title: string) {
-    const confirmed = window.confirm(`Approve "${title}"? This will make it live on CasaGH.`);
-    if (!confirmed) return;
-    try {
-      await approveProperty(id);
-      setProperties(prev => prev.filter(p => p.id !== id));
-      window.alert(`✅ "${title}" has been approved and is now live!`);
-    } catch (error) {
-      window.alert('Failed to approve property. Please try again.');
-    }
+  function handleApprove(id: number, title: string) {
+    showConfirm({
+      title: 'Approve Property?',
+      message: `Approve "${title}"? This will make it live on CasaGH.`,
+      confirmLabel: 'Approve',
+      onConfirm: async () => {
+        try {
+          await approveProperty(id);
+          setProperties(prev => prev.filter(p => p.id !== id));
+          showAlert('Approved', `"${title}" has been approved and is now live!`);
+        } catch (error) {
+          showAlert('Error', 'Failed to approve property. Please try again.');
+        }
+      },
+    });
   }
 
-  async function handleReject(id: number, title: string) {
-    const confirmed = window.confirm(`Reject "${title}"? This will remove it from the platform.`);
-    if (!confirmed) return;
-    try {
-      await rejectProperty(id);
-      setProperties(prev => prev.filter(p => p.id !== id));
-      window.alert(`❌ "${title}" has been rejected.`);
-    } catch (error) {
-      window.alert('Failed to reject property. Please try again.');
-    }
+  function handleReject(id: number, title: string) {
+    showConfirm({
+      title: 'Reject Property?',
+      message: `Reject "${title}"? This will remove it from the platform.`,
+      confirmLabel: 'Reject',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await rejectProperty(id);
+          setProperties(prev => prev.filter(p => p.id !== id));
+          showAlert('Rejected', `"${title}" has been rejected.`);
+        } catch (error) {
+          showAlert('Error', 'Failed to reject property. Please try again.');
+        }
+      },
+    });
   }
 
   if (!isAdmin) return null;
