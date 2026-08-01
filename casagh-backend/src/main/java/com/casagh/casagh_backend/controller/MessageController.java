@@ -43,4 +43,13 @@ public class MessageController {
     public ResponseEntity<List<Message>> getPropertyMessages(@PathVariable Long propertyId) {
         return ResponseEntity.ok(messageService.getPropertyMessages(propertyId));
     }
+
+    // Mark all messages from a specific sender as read
+    @PutMapping("/read/{receiverId}/{senderId}")
+    public ResponseEntity<Void> markConversationAsRead(
+            @PathVariable Long receiverId,
+            @PathVariable Long senderId) {
+        messageService.markConversationAsRead(receiverId, senderId);
+        return ResponseEntity.ok().build();
+    }
 }
