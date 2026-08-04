@@ -190,6 +190,24 @@ export async function getPendingProperties() {
   return res.json();
 }
 
+export async function getVerifiedProperties() {
+  const res = await fetch(`${BASE_URL}/properties/verified`);
+  if (!res.ok) throw new Error('Failed to fetch approved properties');
+  return res.json();
+}
+
+export async function getRejectedProperties() {
+  const res = await fetch(`${BASE_URL}/properties/rejected`);
+  if (!res.ok) throw new Error('Failed to fetch rejected properties');
+  return res.json();
+}
+
+export async function getPropertiesByOwner(ownerId: number) {
+  const res = await fetch(`${BASE_URL}/properties/owner/${ownerId}`);
+  if (!res.ok) throw new Error('Failed to fetch your properties');
+  return res.json();
+}
+
 export async function approveProperty(propertyId: number) {
   const res = await fetch(`${BASE_URL}/properties/${propertyId}/approve`, {
     method: 'PUT',
