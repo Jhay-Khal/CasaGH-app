@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+casagh-backend/uploads/
+
+casagh-backend/src/main/resources/application.properties

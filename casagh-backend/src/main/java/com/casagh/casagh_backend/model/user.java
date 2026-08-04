@@ -32,6 +32,18 @@ public class User {
     @Column(name = "is_verified")
     private Boolean isVerified = false;
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

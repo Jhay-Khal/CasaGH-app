@@ -52,16 +52,13 @@ export default function Login() {
       await AsyncStorage.setItem('userEmail', response.email);
       await AsyncStorage.setItem('userRole', response.role);
 
-      await AsyncStorage.setItem(
-        'user',
-        JSON.stringify({
-          id: response.id,
-          email: response.email,
-          fullName: response.fullName,
-          role: response.role,
-          phone: response.phone,
-        })
-      );
+      await AsyncStorage.setItem('user', JSON.stringify({
+      id: response.id,
+      email: response.email || email,
+      fullName: response.fullName,
+      role: response.role,
+      phone: response.phone,
+    }));
 
       showAlert('Welcome Back!', 'Login successful.', () => {
         router.replace('/(tabs)');

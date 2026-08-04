@@ -82,10 +82,19 @@ export default function Register() {
       await AsyncStorage.setItem('userId', String(response.id));
       await AsyncStorage.setItem('userEmail', response.email);
       await AsyncStorage.setItem('userRole', response.role);
+      
+      await AsyncStorage.setItem('user', JSON.stringify({
+      id: response.id,
+      email: response.email || email,
+      fullName: response.fullName,
+      role: response.role,
+      phone: response.phone,
+    }));
 
-      showAlert('Success', 'Account created successfully!', () => {
-        router.replace('/(tabs)');
-      });
+    showAlert('Success', 'Account created successfully!', () => {
+      router.replace('/(tabs)');
+    });
+
     } catch (error: any) {
       showAlert('Registration Failed', error?.message ?? 'Something went wrong.');
     } finally {

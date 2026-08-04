@@ -257,6 +257,19 @@ export async function register(
   return res.json();
 }
 
+ export async function forgotPassword(email: string) {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const message = await extractErrorMessage(res, 'Failed to send reset link');
+    throw new Error(message);
+  }
+  return res.text();
+}
+
 // ─── Saved Properties ─────────────────────────────────────────────────────
 export async function saveProperty(userId: number, propertyId: number) {
   const res = await fetch(`${BASE_URL}/saved/${userId}/${propertyId}`, {
