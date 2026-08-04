@@ -30,7 +30,7 @@ export default function Login() {
       await AsyncStorage.setItem('userRole', response.role);
       await AsyncStorage.setItem('user', JSON.stringify({
         id: response.id,
-        email: response.email,
+        email: response.email || email,
         fullName: response.fullName,
         role: response.role,
         phone: response.phone,

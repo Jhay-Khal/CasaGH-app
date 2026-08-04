@@ -36,6 +36,13 @@ export default function Register() {
       await AsyncStorage.setItem('userId', String(response.id));
       await AsyncStorage.setItem('userEmail', response.email);
       await AsyncStorage.setItem('userRole', response.role);
+      await AsyncStorage.setItem('user', JSON.stringify({
+      id: response.id,
+      email: response.email,
+      fullName: response.fullName,
+      role: response.role,
+      phone: response.phone,
+      }));
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Registration Failed', error?.message || 'Something went wrong. Please try again.');
