@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,32 +9,69 @@ import { verifyPayment } from '../../services/api';
 
 type VerifyState = 'checking' | 'success' | 'failed';
 
+const MAX_ATTEMPTS = 6;
+const RETRY_DELAY_MS = 3000;
+
 export default function CheckoutSuccess() {
   const { reference } = useLocalSearchParams<{ reference: string }>();
   const [state, setState] = useState<VerifyState>('checking');
   const [booking, setBooking] = useState<any>(null);
+  const [attempt, setAttempt] = useState(0);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
-    checkPayment();
+    cancelledRef.current = false;
+    startPolling();
+    return () => {
+      cancelledRef.current = true;
+    };
   }, [reference]);
 
-  async function checkPayment() {
+  async function startPolling() {
+    setState('checking');
+    setAttempt(0);
+    await attemptVerify(1);
+  }
+
+  async function attemptVerify(attemptNumber: number) {
+    if (cancelledRef.current) return;
     if (!reference) {
       setState('failed');
       return;
     }
+
+    setAttempt(attemptNumber);
+
     try {
       const result = await verifyPayment(reference);
+      if (cancelledRef.current) return;
+
       if (result.verified) {
         setBooking(result.booking);
         setState('success');
+        return;
+      }
+
+      // Not verified yet — retry if attempts remain
+      if (attemptNumber < MAX_ATTEMPTS) {
+        setTimeout(() => attemptVerify(attemptNumber + 1), RETRY_DELAY_MS);
       } else {
         setState('failed');
       }
     } catch (error) {
       console.error('Payment verification failed:', error);
-      setState('failed');
+      if (cancelledRef.current) return;
+
+      if (attemptNumber < MAX_ATTEMPTS) {
+        setTimeout(() => attemptVerify(attemptNumber + 1), RETRY_DELAY_MS);
+      } else {
+        setState('failed');
+      }
     }
+  }
+
+  function handleManualRetry() {
+    startPolling();
   }
 
   if (state === 'checking') {
@@ -45,7 +82,7 @@ export default function CheckoutSuccess() {
           Confirming your payment…
         </Text>
         <Text variant="bodySm" color={theme.colors.inkSoft} style={{ marginTop: 6, textAlign: 'center', paddingHorizontal: 40 }}>
-          This should only take a moment
+          This should only take a moment. Checking attempt {attempt} of {MAX_ATTEMPTS}…
         </Text>
       </View>
     );
@@ -63,7 +100,7 @@ export default function CheckoutSuccess() {
         <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
           We couldn't confirm your payment yet. If you completed checkout, tap below to check again.
         </Text>
-        <Button label="Check Again" onPress={checkPayment} style={{ marginTop: 28, minWidth: 200 }} />
+        <Button label="Check Again" onPress={handleManualRetry} style={{ marginTop: 28, minWidth: 200 }} />
         <Button
           label="Back to Explore"
           variant="secondary"

@@ -5,7 +5,6 @@ import {
   View,
   StyleSheet,
   Pressable,
-  Alert,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -19,6 +18,7 @@ import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { createProperty, uploadPropertyImage, uploadPropertyDocument, initiateListingPayment } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 type PropertyType = 'APARTMENT' | 'HOSTEL' | 'HOUSE';
 
@@ -40,6 +40,8 @@ function getPriceLabel(type: PropertyType, isForRent: boolean): string {
 }
 
 export default function UploadProperty() {
+  const { showAlert } = useAppAlert();
+
   const [checkingRole, setCheckingRole] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
@@ -92,7 +94,7 @@ export default function UploadProperty() {
   async function pickImages() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access to add images.');
+      showAlert('Permission needed', 'Please allow photo library access to add images.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -117,7 +119,7 @@ export default function UploadProperty() {
         setDocument(result.assets[0]);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not pick document. Please try again.');
+      showAlert('Error', 'Could not pick document. Please try again.');
     }
   }
 
@@ -150,20 +152,20 @@ export default function UploadProperty() {
 
   async function handleSubmit() {
     if (!userId) {
-      Alert.alert('Error', 'Could not identify your account. Please log in again.');
+      showAlert('Error', 'Could not identify your account. Please log in again.');
       return;
     }
     if (!title || !description || !price || !region || !city || !area) {
-      Alert.alert('Missing information', 'Please fill in all fields before submitting.');
+      showAlert('Missing information', 'Please fill in all fields before submitting.');
       return;
     }
     if (!document) {
-      Alert.alert('Document required', 'Please upload a property document (title deed, lease agreement, etc.) for verification.');
+      showAlert('Document required', 'Please upload a property document (title deed, lease agreement, etc.) for verification.');
       return;
     }
     const numericPrice = parseFloat(price);
     if (isNaN(numericPrice) || numericPrice <= 0) {
-      Alert.alert('Invalid price', 'Please enter a valid price.');
+      showAlert('Invalid price', 'Please enter a valid price.');
       return;
     }
 
@@ -207,13 +209,12 @@ export default function UploadProperty() {
         params: {
           propertyId: newProperty.id,
           propertyTitle: title,
-          email: userEmail,
         },
       });
 
       resetForm();
     } catch (error) {
-      Alert.alert('Submission failed', 'Something went wrong while creating your listing. Please try again.');
+      showAlert('Submission failed', 'Something went wrong while creating your listing. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView, Pressable, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,8 +8,11 @@ import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { getUser, updateUser } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function EditProfile() {
+  const { showAlert } = useAppAlert();
+
   const [userId, setUserId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,7 +39,7 @@ export default function EditProfile() {
       setEmail(user.email || '');
     } catch (error) {
       console.error('Failed to load user:', error);
-      Alert.alert('Error', 'Could not load your profile.');
+      showAlert('Error', 'Could not load your profile.');
     } finally {
       setLoading(false);
     }
@@ -45,11 +48,11 @@ export default function EditProfile() {
   async function handleSave() {
     if (!userId) return;
     if (!name.trim()) {
-      Alert.alert('Missing name', 'Please enter your full name.');
+      showAlert('Missing name', 'Please enter your full name.');
       return;
     }
     if (!phone.trim() || phone.trim().length < 10) {
-      Alert.alert('Invalid phone', 'Please enter a valid phone number.');
+      showAlert('Invalid phone', 'Please enter a valid phone number.');
       return;
     }
 
@@ -59,7 +62,7 @@ export default function EditProfile() {
       await AsyncStorage.setItem('userFullName', name.trim());
       router.replace('/(tabs)/profile');
     } catch (error: any) {
-      Alert.alert('Update failed', error?.message || 'Something went wrong. Please try again.');
+      showAlert('Update failed', error?.message || 'Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }

@@ -8,7 +8,6 @@ function getBaseUrl() {
     return 'http://10.0.2.2:8080/api';
   }
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    // Reuse whatever host the page was loaded from (works for localhost AND phone-over-hotspot)
     return `http://${window.location.hostname}:8080/api`;
   }
   return 'http://localhost:8080/api';
@@ -16,6 +15,7 @@ function getBaseUrl() {
 
 const BASE_URL = getBaseUrl();
 const API_BASE = BASE_URL.replace('/api', '');
+
 // ─── Property Images by Type ───────────────────────────────────────────────
 const PROPERTY_IMAGES: Record<string, string[]> = {
   HOSTEL: [
@@ -71,8 +71,10 @@ async function toUploadFile(uri: string, name: string, type: string) {
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────
+
+// FIXED: uses paginated endpoint with size=100 so all properties always show
 export async function getProperties() {
-  const res = await fetch(`${BASE_URL}/properties`);
+  const res = await fetch(`${BASE_URL}/properties/paginated?page=0&size=100`);
   if (!res.ok) throw new Error('Failed to fetch properties');
   const data = await res.json();
   return Array.isArray(data) ? data : (data.content || []);
@@ -188,6 +190,24 @@ export async function getPendingProperties() {
   return res.json();
 }
 
+export async function getVerifiedProperties() {
+  const res = await fetch(`${BASE_URL}/properties/verified`);
+  if (!res.ok) throw new Error('Failed to fetch approved properties');
+  return res.json();
+}
+
+export async function getRejectedProperties() {
+  const res = await fetch(`${BASE_URL}/properties/rejected`);
+  if (!res.ok) throw new Error('Failed to fetch rejected properties');
+  return res.json();
+}
+
+export async function getPropertiesByOwner(ownerId: number) {
+  const res = await fetch(`${BASE_URL}/properties/owner/${ownerId}`);
+  if (!res.ok) throw new Error('Failed to fetch your properties');
+  return res.json();
+}
+
 export async function approveProperty(propertyId: number) {
   const res = await fetch(`${BASE_URL}/properties/${propertyId}/approve`, {
     method: 'PUT',
@@ -285,6 +305,22 @@ export async function getSentMessages(userId: number) {
   const res = await fetch(`${BASE_URL}/messages/sent/${userId}`);
   if (!res.ok) throw new Error('Failed to fetch sent messages');
   return res.json();
+}
+
+export async function markConversationAsRead(receiverId: number, senderId: number) {
+  const res = await fetch(`${BASE_URL}/messages/read/${receiverId}/${senderId}`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Failed to mark messages as read');
+}
+
+export async function getUnreadMessageCount(userId: number): Promise<number> {
+  try {
+    const received = await getReceivedMessages(userId);
+    return received.filter((m: any) => !m.isRead).length;
+  } catch {
+    return 0;
+  }
 }
 
 // ─── Reviews ──────────────────────────────────────────────────────────────

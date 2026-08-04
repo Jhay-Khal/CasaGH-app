@@ -8,12 +8,18 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
-import { getPendingProperties, approveProperty, rejectProperty } from '../../services/api';
+import { getPendingProperties, getVerifiedProperties, getRejectedProperties, approveProperty, rejectProperty } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
+
+type ViewMode = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export default function AdminDashboard() {
+  const { showAlert, showConfirm } = useAppAlert();
+
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('PENDING');
 
   useFocusEffect(
     useCallback(() => {
@@ -28,46 +34,71 @@ export default function AdminDashboard() {
       return;
     }
     setIsAdmin(true);
-    loadPending();
+    loadProperties(viewMode);
   }
 
-  async function loadPending() {
+  async function loadProperties(mode: ViewMode) {
     setLoading(true);
     try {
-      const data = await getPendingProperties();
+      let data;
+      if (mode === 'PENDING') data = await getPendingProperties();
+      else if (mode === 'APPROVED') data = await getVerifiedProperties();
+      else data = await getRejectedProperties();
       setProperties(data);
     } catch (error) {
-      console.error('Failed to load pending properties:', error);
+      console.error('Failed to load properties:', error);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleApprove(id: number, title: string) {
-    const confirmed = window.confirm(`Approve "${title}"? This will make it live on CasaGH.`);
-    if (!confirmed) return;
-    try {
-      await approveProperty(id);
-      setProperties(prev => prev.filter(p => p.id !== id));
-      window.alert(`✅ "${title}" has been approved and is now live!`);
-    } catch (error) {
-      window.alert('Failed to approve property. Please try again.');
-    }
+  function switchView(mode: ViewMode) {
+    setViewMode(mode);
+    loadProperties(mode);
   }
 
-  async function handleReject(id: number, title: string) {
-    const confirmed = window.confirm(`Reject "${title}"? This will remove it from the platform.`);
-    if (!confirmed) return;
-    try {
-      await rejectProperty(id);
-      setProperties(prev => prev.filter(p => p.id !== id));
-      window.alert(`❌ "${title}" has been rejected.`);
-    } catch (error) {
-      window.alert('Failed to reject property. Please try again.');
-    }
+  function handleApprove(id: number, title: string) {
+    showConfirm({
+      title: 'Approve Property?',
+      message: `Approve "${title}"? This will make it live on CasaGH.`,
+      confirmLabel: 'Approve',
+      onConfirm: async () => {
+        try {
+          await approveProperty(id);
+          setProperties(prev => prev.filter(p => p.id !== id));
+          showAlert('Approved', `"${title}" has been approved and is now live!`);
+        } catch (error) {
+          showAlert('Error', 'Failed to approve property. Please try again.');
+        }
+      },
+    });
+  }
+
+  function handleReject(id: number, title: string) {
+    showConfirm({
+      title: 'Reject Property?',
+      message: `Reject "${title}"? This will remove it from the platform.`,
+      confirmLabel: 'Reject',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await rejectProperty(id);
+          setProperties(prev => prev.filter(p => p.id !== id));
+          showAlert('Rejected', `"${title}" has been rejected.`);
+        } catch (error) {
+          showAlert('Error', 'Failed to reject property. Please try again.');
+        }
+      },
+    });
   }
 
   if (!isAdmin) return null;
+
+  const emptyMessages: Record<ViewMode, { title: string; subtitle: string }> = {
+    PENDING: { title: 'All caught up!', subtitle: 'No properties pending review right now.' },
+    APPROVED: { title: 'Nothing approved yet', subtitle: 'Approved properties will appear here.' },
+    REJECTED: { title: 'No rejections', subtitle: 'Rejected properties will appear here.' },
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,8 +108,36 @@ export default function AdminDashboard() {
           <Ionicons name="arrow-back" size={22} color="#0D1B4B" />
         </Pressable>
         <Text variant="h2" color="#0D1B4B">Admin Dashboard</Text>
-        <Pressable onPress={loadPending} style={styles.refreshBtn}>
+        <Pressable onPress={() => loadProperties(viewMode)} style={styles.refreshBtn}>
           <Ionicons name="refresh" size={22} color="#3AAFA9" />
+        </Pressable>
+      </View>
+
+      {/* View Toggle */}
+      <View style={styles.toggleRow}>
+        <Pressable
+          style={[styles.toggleBtn, viewMode === 'PENDING' && styles.toggleBtnActive]}
+          onPress={() => switchView('PENDING')}
+        >
+          <Text variant="bodySm" color={viewMode === 'PENDING' ? '#fff' : '#0D1B4B'} style={{ fontWeight: '600' }}>
+            Pending
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.toggleBtn, viewMode === 'APPROVED' && styles.toggleBtnActive]}
+          onPress={() => switchView('APPROVED')}
+        >
+          <Text variant="bodySm" color={viewMode === 'APPROVED' ? '#fff' : '#0D1B4B'} style={{ fontWeight: '600' }}>
+            Approved
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.toggleBtn, viewMode === 'REJECTED' && styles.toggleBtnActive]}
+          onPress={() => switchView('REJECTED')}
+        >
+          <Text variant="bodySm" color={viewMode === 'REJECTED' ? '#fff' : '#0D1B4B'} style={{ fontWeight: '600' }}>
+            Rejected
+          </Text>
         </Pressable>
       </View>
 
@@ -86,12 +145,14 @@ export default function AdminDashboard() {
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text variant="h1" color="#3AAFA9">{properties.length}</Text>
-          <Text variant="caption" color={theme.colors.inkSoft}>Pending Review</Text>
+          <Text variant="caption" color={theme.colors.inkSoft}>
+            {viewMode === 'PENDING' ? 'Pending Review' : viewMode === 'APPROVED' ? 'Approved & Live' : 'Rejected'}
+          </Text>
         </View>
       </View>
 
       <Text variant="h3" color="#0D1B4B" style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-        Pending Properties
+        {viewMode === 'PENDING' ? 'Pending Properties' : viewMode === 'APPROVED' ? 'Approved Properties' : 'Rejected Properties'}
       </Text>
 
       {loading ? (
@@ -100,10 +161,10 @@ export default function AdminDashboard() {
         <View style={styles.emptyState}>
           <Ionicons name="checkmark-circle" size={48} color="#3AAFA9" />
           <Text variant="h3" color={theme.colors.inkSoft} style={{ marginTop: 12 }}>
-            All caught up!
+            {emptyMessages[viewMode].title}
           </Text>
           <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ textAlign: 'center', marginTop: 4 }}>
-            No properties pending review right now.
+            {emptyMessages[viewMode].subtitle}
           </Text>
         </View>
       ) : (
@@ -174,27 +235,60 @@ export default function AdminDashboard() {
                 {property.description}
               </Text>
 
-              {/* Action Buttons */}
-              <View style={styles.actions}>
-                <Pressable
-                  style={styles.rejectBtn}
-                  onPress={() => handleReject(property.id, property.title)}
-                >
-                  <Ionicons name="close" size={16} color="#C2402F" />
-                  <Text variant="bodyMd" color="#C2402F" style={{ marginLeft: 6, fontWeight: '600' }}>
-                    Reject
+              {/* Action Buttons — only for Pending view */}
+              {viewMode === 'PENDING' && (
+                <View style={styles.actions}>
+                  <Pressable
+                    style={styles.rejectBtn}
+                    onPress={() => handleReject(property.id, property.title)}
+                  >
+                    <Ionicons name="close" size={16} color="#C2402F" />
+                    <Text variant="bodyMd" color="#C2402F" style={{ marginLeft: 6, fontWeight: '600' }}>
+                      Reject
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.approveBtn}
+                    onPress={() => handleApprove(property.id, property.title)}
+                  >
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Text variant="bodyMd" color="#fff" style={{ marginLeft: 6, fontWeight: '600' }}>
+                      Approve
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Approved badge */}
+              {viewMode === 'APPROVED' && (
+                <View style={[styles.statusBadge, { backgroundColor: '#E0F5F4' }]}>
+                  <Ionicons name="checkmark-circle" size={16} color="#3AAFA9" />
+                  <Text variant="bodyMd" color="#3AAFA9" style={{ marginLeft: 6, fontWeight: '600' }}>
+                    Live on CasaGH
                   </Text>
-                </Pressable>
-                <Pressable
-                  style={styles.approveBtn}
-                  onPress={() => handleApprove(property.id, property.title)}
-                >
-                  <Ionicons name="checkmark" size={16} color="#fff" />
-                  <Text variant="bodyMd" color="#fff" style={{ marginLeft: 6, fontWeight: '600' }}>
-                    Approve
-                  </Text>
-                </Pressable>
-              </View>
+                </View>
+              )}
+
+              {/* Rejected badge + re-approve option */}
+              {viewMode === 'REJECTED' && (
+                <>
+                  <View style={[styles.statusBadge, { backgroundColor: '#FBE7E5' }]}>
+                    <Ionicons name="close-circle" size={16} color="#C2402F" />
+                    <Text variant="bodyMd" color="#C2402F" style={{ marginLeft: 6, fontWeight: '600' }}>
+                      Rejected
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={[styles.approveBtn, { marginTop: 10 }]}
+                    onPress={() => handleApprove(property.id, property.title)}
+                  >
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Text variant="bodyMd" color="#fff" style={{ marginLeft: 6, fontWeight: '600' }}>
+                      Approve Instead
+                    </Text>
+                  </Pressable>
+                </>
+              )}
             </View>
           ))}
         </ScrollView>
@@ -221,6 +315,20 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#E0F5F4',
     alignItems: 'center', justifyContent: 'center',
+  },
+  toggleRow: {
+    flexDirection: 'row', gap: 8,
+    paddingHorizontal: 16, paddingTop: 16,
+  },
+  toggleBtn: {
+    flex: 1, paddingVertical: 10,
+    borderRadius: 10, alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1.5, borderColor: '#DCE8F0',
+  },
+  toggleBtnActive: {
+    backgroundColor: '#3AAFA9',
+    borderColor: '#3AAFA9',
   },
   statsRow: { flexDirection: 'row', padding: 16, gap: 12 },
   statCard: {
@@ -257,6 +365,12 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', paddingVertical: 12,
     borderRadius: 10, backgroundColor: '#3AAFA9',
+  },
+  statusBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    marginTop: 16, paddingVertical: 10,
+    justifyContent: 'center',
+    borderRadius: 10,
   },
   emptyState: {
     flex: 1, alignItems: 'center',

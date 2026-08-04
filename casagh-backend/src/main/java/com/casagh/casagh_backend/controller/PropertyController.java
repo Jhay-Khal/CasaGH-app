@@ -65,6 +65,16 @@ public class PropertyController {
         return ResponseEntity.ok(propertyService.getPendingProperties());
     }
 
+    @GetMapping("/rejected")
+    public ResponseEntity<List<Property>> getRejectedProperties() {
+        return ResponseEntity.ok(propertyService.getRejectedProperties());
+    }
+
+    @GetMapping("/owner/{ownerId}")
+    public ResponseEntity<List<Property>> getPropertiesByOwner(@PathVariable Long ownerId) {
+        return ResponseEntity.ok(propertyService.getPropertiesByOwner(ownerId));
+    }
+
     @PostMapping
     public ResponseEntity<Property> createProperty(@RequestBody Property property) {
         if (property.getOwnerId() != null) {

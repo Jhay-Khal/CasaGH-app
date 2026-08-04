@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,10 +6,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../theme';
 import { Text } from '../../components/Text';
 import { ListingCard } from '../../components/ListingCard';
-import { getSavedProperties, unsaveProperty, getPropertyImage } from '../../services/api';
+import { getSavedProperties, unsaveProperty, getPropertyImage, getPropertyImages } from '../../services/api';
+
+const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api').replace('/api', '');
+
+function resolveImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return url;
+}
 
 export default function Saved() {
   const [saved, setSaved] = useState<any[]>([]);
+  const [imageMap, setImageMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
 
@@ -30,6 +39,18 @@ export default function Saved() {
       setUserId(id);
       const data = await getSavedProperties(id);
       setSaved(data);
+
+      // Fetch real images for each saved property
+      const map: Record<number, string> = {};
+      await Promise.all(
+        data.map(async (item: any) => {
+          const property = item.property || item;
+          const images = await getPropertyImages(property.id);
+          const resolved = resolveImageUrl(images?.[0]?.imageUrl);
+          map[property.id] = resolved || getPropertyImage(property.type, property.id);
+        })
+      );
+      setImageMap(map);
     } catch (error) {
       console.error('Failed to load saved properties:', error);
     } finally {
@@ -81,10 +102,7 @@ export default function Saved() {
                 return (
                   <ListingCard
                     key={property.id}
-                    imageUrl={
-                      property.images?.[0]?.imageUrl ||
-                      getPropertyImage(property.type, property.id)
-                    }
+                    imageUrl={imageMap[property.id] || getPropertyImage(property.type, property.id)}
                     name={property.title}
                     location={`${property.area}, ${property.city}`}
                     pricePerNight={property.price}

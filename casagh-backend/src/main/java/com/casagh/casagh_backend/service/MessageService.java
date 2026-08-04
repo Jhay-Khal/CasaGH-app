@@ -58,4 +58,12 @@ public class MessageService {
     public List<Message> getPropertyMessages(Long propertyId) {
         return messageRepository.findByPropertyId(propertyId);
     }
+
+    public void markConversationAsRead(Long receiverId, Long senderId) {
+        List<Message> unread = messageRepository.findByReceiverIdAndSenderIdAndIsReadFalse(receiverId, senderId);
+        for (Message m : unread) {
+            m.setIsRead(true);
+        }
+        messageRepository.saveAll(unread);
+    }
 }

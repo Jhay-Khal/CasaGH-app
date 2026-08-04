@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Image, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Image, SafeAreaView, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
@@ -8,107 +8,121 @@ const { height } = Dimensions.get('window');
 
 export default function Onboarding() {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.webWrapper}>
+      <SafeAreaView style={styles.container}>
 
-      {/* Hero Image */}
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=80' }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        <View style={styles.overlayTop} />
-        <View style={styles.overlayBottom} />
+        {/* Hero Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=80' }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <View style={styles.overlayTop} />
+          <View style={styles.overlayBottom} />
 
-        {/* Logo on image */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIconWrap}>
-            <Ionicons name="home" size={22} color="#C9A84C" />
+          {/* Logo on image */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoIconWrap}>
+              <Ionicons name="home" size={22} color="#C9A84C" />
+            </View>
+            <View>
+              <Text style={styles.logoText}>CasaGH</Text>
+              <Text style={styles.logoTagline}>Find Home. Find Peace.</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.logoText}>CasaGH</Text>
-            <Text style={styles.logoTagline}>Find Home. Find Peace.</Text>
-          </View>
-        </View>
 
-        {/* Stats row inside image */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>50+</Text>
-            <Text style={styles.statLabel}>Listings</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>10+</Text>
-            <Text style={styles.statLabel}>Cities</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>100%</Text>
-            <Text style={styles.statLabel}>Verified</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Content Card */}
-      <View style={styles.content}>
-
-        {/* Badges */}
-        <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Ionicons name="shield-checkmark" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
-            <Text style={styles.badgeText}>Verified Listings</Text>
-          </View>
-          <View style={styles.badge}>
-            <Ionicons name="location" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
-            <Text style={styles.badgeText}>Ghana Wide</Text>
-          </View>
-          <View style={styles.badge}>
-            <Ionicons name="star" size={11} color="#C9A84C" style={{ marginRight: 4 }} />
-            <Text style={styles.badgeText}>Trusted</Text>
+          {/* Stats row inside image */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>50+</Text>
+              <Text style={styles.statLabel}>Listings</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>10+</Text>
+              <Text style={styles.statLabel}>Cities</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>100%</Text>
+              <Text style={styles.statLabel}>Verified</Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.heading}>Find your perfect{'\n'}home in Ghana</Text>
-        <Text style={styles.subtext}>
-          Browse verified apartments, hostels, and houses. Safe, simple, and smart.
-        </Text>
+        {/* Content Card */}
+        <View style={styles.content}>
 
-        {/* Get Started Button */}
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => router.replace('/(auth)/login')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
+          {/* Badges */}
+          <View style={styles.badgeRow}>
+            <View style={styles.badge}>
+              <Ionicons name="shield-checkmark" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
+              <Text style={styles.badgeText}>Verified Listings</Text>
+            </View>
+            <View style={styles.badge}>
+              <Ionicons name="location" size={11} color="#3AAFA9" style={{ marginRight: 4 }} />
+              <Text style={styles.badgeText}>Ghana Wide</Text>
+            </View>
+            <View style={styles.badge}>
+              <Ionicons name="star" size={11} color="#C9A84C" style={{ marginRight: 4 }} />
+              <Text style={styles.badgeText}>Trusted</Text>
+            </View>
+          </View>
 
-        {/* Browse as Guest */}
-        <TouchableOpacity
-          style={styles.ghostButton}
-          onPress={() => router.replace('/(tabs)')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.ghostButtonText}>Browse as guest</Text>
-        </TouchableOpacity>
+          <Text style={styles.heading}>Find your perfect{'\n'}home in Ghana</Text>
+          <Text style={styles.subtext}>
+            Browse verified apartments, hostels, and houses. Safe, simple, and smart.
+          </Text>
 
-        <Text style={styles.termsText}>
-          By continuing you agree to our{' '}
-          <Text style={styles.termsLink}>Terms</Text>
-          {' '}and{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>
-        </Text>
+          {/* Get Started Button */}
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => router.replace('/(auth)/login')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.primaryButtonText}>Get Started</Text>
+            <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+          </TouchableOpacity>
 
-      </View>
-    </SafeAreaView>
+          {/* Browse as Guest */}
+          <TouchableOpacity
+            style={styles.ghostButton}
+            onPress={() => router.replace('/(tabs)')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ghostButtonText}>Browse as guest</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.termsText}>
+            By continuing you agree to our{' '}
+            <Text style={styles.termsLink}>Terms</Text>
+            {' '}and{' '}
+            <Text style={styles.termsLink}>Privacy Policy</Text>
+          </Text>
+
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  webWrapper: {
+    flex: 1,
+    backgroundColor: '#F0FAFA',
+    ...(Platform.OS === 'web' && {
+      alignItems: 'center',
+    }),
+  },
   container: {
     flex: 1,
-    backgroundColor: '#0D1B4B',
+    backgroundColor: '#F0FAFA',
+    width: '100%',
+    ...(Platform.OS === 'web' && {
+      maxWidth: 480,
+      boxShadow: '0 0 40px rgba(0,0,0,0.15)',
+    }),
   },
   imageContainer: {
     height: height * 0.52,

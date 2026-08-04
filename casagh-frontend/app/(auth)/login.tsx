@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
@@ -8,37 +8,63 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { login } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppAlert } from '../context/AppAlertContext';
 
 export default function Login() {
+  const { showAlert } = useAppAlert();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [rememberMe, setRememberMe] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+  });
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter your email and password');
-      return;
-    }
+    const newErrors = {
+      email: '',
+      password: '',
+    };
+
+    if (!emailRegex.test(email)) newErrors.email = 'Enter a valid email';
+    if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+
+    setErrors(newErrors);
+
+    if (Object.values(newErrors).some(Boolean)) return;
+
     setLoading(true);
+
     try {
       const response = await login(email, password);
 
-      // Save all user info to AsyncStorage
       await AsyncStorage.setItem('token', response.token);
       await AsyncStorage.setItem('userId', String(response.id));
       await AsyncStorage.setItem('userEmail', response.email);
       await AsyncStorage.setItem('userRole', response.role);
-      await AsyncStorage.setItem('user', JSON.stringify({
-        id: response.id,
-        email: response.email || email,
-        fullName: response.fullName,
-        role: response.role,
-        phone: response.phone,
-      }));
 
-      router.replace('/(tabs)');
-    } catch (error) {
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      await AsyncStorage.setItem('user', JSON.stringify({
+      id: response.id,
+      email: response.email || email,
+      fullName: response.fullName,
+      role: response.role,
+      phone: response.phone,
+    }));
+
+      showAlert('Welcome Back!', 'Login successful.', () => {
+        router.replace('/(tabs)');
+      });
+    } catch {
+      showAlert('Login Failed', 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -58,8 +84,17 @@ export default function Login() {
             <Text style={styles.logoTagline}>Find Home. Find Peace.</Text>
           </View>
 
-          <Text variant="h1" color="#0D1B4B" style={{ marginBottom: 8 }}>Welcome back</Text>
-          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32 }}>
+          <Text
+            variant="h1"
+            color="#0D1B4B"
+            style={{
+              marginBottom: 8,
+              textAlign: 'center',
+            }}
+          >
+            Welcome Back
+          </Text>
+          <Text variant="bodyMd" color={theme.colors.inkSoft} style={{ marginBottom: 32, textAlign: 'center' }}>
             Sign in to continue to CasaGH
           </Text>
 
@@ -70,19 +105,48 @@ export default function Login() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            error={errors.email}
           />
           <Input
             label="Password"
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!showPassword}
+            error={errors.password}
+            rightIcon={showPassword ? 'eye-off' : 'eye'}
+            onRightIconPress={() => setShowPassword(!showPassword)}
           />
-
+          <View
+            style={{
+              alignItems: 'flex-end',
+              marginBottom: 18,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                router.push('/forget-password');
+              }}
+            >
+              <Text
+                color="#3AAFA9"
+                style={{
+                  fontFamily: theme.fontFamily.bodySemiBold,
+                }}
+              >
+                Forgot Password?
+              </Text>
+            </Pressable>
+          </View>
           <Button
-            label={loading ? 'Signing in...' : 'Sign In'}
+            label={loading ? 'Signing In...' : 'Sign In'}
             onPress={handleLogin}
-            style={{ marginTop: 24, marginBottom: 16, backgroundColor: '#3AAFA9' }}
+            disabled={loading}
+            style={{
+              marginTop: 24,
+              marginBottom: 16,
+              backgroundColor: '#3AAFA9',
+            }}
           />
 
           <View style={styles.footerRow}>
