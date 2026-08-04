@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, Image, StyleSheet, Pressable, Linking, Alert, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Image, StyleSheet, Pressable, Linking, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
@@ -7,6 +7,7 @@ import { Text } from '../../components/Text';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { getPropertyById, getPropertyImages } from '../../services/api';
+import { useAppAlert } from '../context/AppAlertContext';
 
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api').replace('/api', '');
 
@@ -18,6 +19,8 @@ function resolveImageUrl(url?: string): string {
 
 export default function HostelDetails() {
   const { id } = useLocalSearchParams();
+  const { showAlert } = useAppAlert();
+
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +35,7 @@ export default function HostelDetails() {
       setProperty({ ...data, images });
     } catch (error) {
       console.error('Failed to load property:', error);
-      Alert.alert('Error', 'Could not load property details');
+      showAlert('Error', 'Could not load property details');
     } finally {
       setLoading(false);
     }
@@ -49,7 +52,7 @@ export default function HostelDetails() {
         await Linking.openURL(`https://wa.me/${phone}`);
       }
     } catch (e) {
-      Alert.alert('Error', 'Could not open WhatsApp');
+      showAlert('Error', 'Could not open WhatsApp');
     }
   };
 
@@ -58,7 +61,7 @@ export default function HostelDetails() {
     try {
       await Linking.openURL(`tel:+${phone}`);
     } catch (e) {
-      Alert.alert('Error', 'Could not open Phone dialer');
+      showAlert('Error', 'Could not open Phone dialer');
     }
   };
 
