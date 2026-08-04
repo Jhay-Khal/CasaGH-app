@@ -16,6 +16,7 @@ import { Text } from "../../components/Text";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { useAppAlert } from "../context/AppAlertContext";
+import { forgotPassword } from "../../services/api";
 
 export default function ForgotPassword() {
   const { showAlert } = useAppAlert();
@@ -33,10 +34,8 @@ export default function ForgotPassword() {
 
     setLoading(true);
 
-    // Temporary until backend is ready
-    setTimeout(() => {
-      setLoading(false);
-
+    try {
+      await forgotPassword(email.trim());
       showAlert(
         "Reset Link Sent",
         "If an account exists with this email, a password reset link has been sent.",
@@ -44,7 +43,14 @@ export default function ForgotPassword() {
           router.back();
         }
       );
-    }, 1800);
+    } catch (error: any) {
+      showAlert(
+        "Something went wrong",
+        error?.message ?? "Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -108,7 +114,7 @@ export default function ForgotPassword() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            leftIcon="mail-outline"
+            leftIcon={<Ionicons name="mail-outline" size={20} color="#8E8E93" />}
           />
 
           {/* Button */}
