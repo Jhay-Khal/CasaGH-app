@@ -61,6 +61,10 @@ public class PropertyService {
         return propertyRepository.findByVerificationStatus("PENDING");
     }
 
+    public List<Property> getRejectedProperties() {
+        return propertyRepository.findByVerificationStatus("REJECTED");
+    }
+
     public List<Property> getPropertiesByOwner(Long ownerId) {
         return propertyRepository.findByOwner_Id(ownerId);
     }
