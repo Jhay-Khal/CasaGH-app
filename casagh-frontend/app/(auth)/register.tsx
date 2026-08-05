@@ -78,22 +78,14 @@ export default function Register() {
     try {
       const response = await register(name, email.trim(), password, phone, role);
 
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('userId', String(response.id));
-      await AsyncStorage.setItem('userEmail', response.email);
-      await AsyncStorage.setItem('userRole', response.role);
-      
-      await AsyncStorage.setItem('user', JSON.stringify({
-      id: response.id,
-      email: response.email || email,
-      fullName: response.fullName,
-      role: response.role,
-      phone: response.phone,
-    }));
+      showAlert(
+      'Verify Your Email',
+      'Account created! Please check your email and click the verification link before logging in.',
+      () => {
+        router.replace('/(auth)/login');
+      }
+    );
 
-    showAlert('Success', 'Account created successfully!', () => {
-      router.replace('/(tabs)');
-    });
 
     } catch (error: any) {
       showAlert('Registration Failed', error?.message ?? 'Something went wrong.');
