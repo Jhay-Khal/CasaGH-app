@@ -24,6 +24,15 @@ function getTodayStr(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getTomorrowStr(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yyyy = tomorrow.getFullYear();
+  const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const dd = String(tomorrow.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function Checkout() {
   const { propertyId, checkIn, checkOut } = useLocalSearchParams<{
     propertyId: string;
@@ -120,10 +129,11 @@ export default function Checkout() {
       }
       const userId = parseInt(userIdStr, 10);
 
-      // For sale properties, there's no date range — use today as a placeholder
-      // single-day record, since the purchase isn't date-bound.
+      // For sale properties, there's no date range — use a one-day placeholder
+      // window (today -> tomorrow) since the backend requires check-out to be
+      // strictly after check-in, even though dates aren't meaningful for a sale.
       const bookingCheckIn = isSale ? getTodayStr() : checkIn!;
-      const bookingCheckOut = isSale ? getTodayStr() : checkOut!;
+      const bookingCheckOut = isSale ? getTomorrowStr() : checkOut!;
 
       // 1. Create the booking (status: PENDING)
       const booking = await createBooking(Number(propertyId), userId, bookingCheckIn, bookingCheckOut);
