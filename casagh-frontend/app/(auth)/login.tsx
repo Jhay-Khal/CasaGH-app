@@ -75,6 +75,14 @@ export default function Login() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content}>
 
+          {/* Back Button */}
+          <Pressable
+            onPress={() => router.replace('/onboarding')}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#0D1B4B" />
+          </Pressable>
+
           {/* Logo */}
           <View style={styles.logoWrap}>
             <View style={styles.logoIcon}>
@@ -170,6 +178,13 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { padding: 28, flexGrow: 1, justifyContent: 'center' },
+  backButton: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    padding: 8,
+    zIndex: 1,
+  },
   logoWrap: { alignItems: 'center', marginBottom: 32 },
   logoIcon: {
     width: 64, height: 64, borderRadius: 16,

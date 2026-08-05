@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "temp-expo",
+    "name": "CasaGH",
     "slug": "temp-expo",
     "version": "1.0.0",
     "scheme": "casagh",
@@ -22,10 +22,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.casagh.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "25b6ee68-f77b-4709-bfb7-b55306ea350d"
+      }
     }
   }
 }

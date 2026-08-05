@@ -1,9 +1,8 @@
 import { Platform } from 'react-native';
 
-// Use 10.0.2.2 for Android emulator, localhost for iOS/Web
-export const API_URL = Platform.OS === 'android' 
-  ? 'http://10.0.2.2:8080/api'
-  : 'http://localhost:8080/api';
+// Use EXPO_PUBLIC_API_URL if set (e.g. Render backend), otherwise fall back to local dev defaults
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 
+  (Platform.OS === 'android' ? 'http://10.0.2.2:8080/api' : 'http://localhost:8080/api');
 
 class ApiClient {
   private token: string | null = null;
